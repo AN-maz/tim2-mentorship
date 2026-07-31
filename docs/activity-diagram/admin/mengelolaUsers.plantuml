@@ -1,0 +1,22 @@
+@startuml
+|Admin|
+start
+:Mengakses Menu Kelola Users;
+
+|Sistem LMS|
+:Eksekusi Native Query (SELECT data pengguna);
+:Menampilkan Daftar Seluruh Akun;
+
+|Admin|
+:Memilih Akun Pengguna;
+:Memilih Aksi (Edit Peran, Suspend, Hapus);
+
+|Sistem LMS|
+:Menerima Perintah Perubahan;
+:Eksekusi Native Query (UPDATE / DELETE tabel Users);
+:Menampilkan Notifikasi Tindakan Sukses;
+
+|Admin|
+:Melihat Daftar Users yang Sudah Diperbarui;
+stop
+@enduml

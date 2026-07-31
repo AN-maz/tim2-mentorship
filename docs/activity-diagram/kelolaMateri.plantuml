@@ -1,0 +1,37 @@
+@startuml
+|Pengguna (Creator)|
+start
+:Memilih Menu Kelola Materi;
+:Memilih Aksi (Tambah, Edit, Hapus);
+
+if (Aksi yang dipilih?) then (Tambah / Edit)
+  :Menulis/Mengubah Konten (Format Markdown);
+  :Menyisipkan File/Gambar Pendukung;
+  :Klik Simpan;
+  
+  |Sistem LMS|
+  :Menerima Payload Data;
+  fork
+    :Mengunggah File Statis ke AWS S3;
+  fork again
+    :Validasi Struktur Markdown;
+  end fork
+  :Eksekusi Native Query (INSERT / UPDATE);
+  
+else (Hapus)
+  |Pengguna (Creator)|
+  :Konfirmasi Hapus Materi;
+  
+  |Sistem LMS|
+  :Eksekusi Native Query (DELETE);
+  :Hapus Aset Terkait dari AWS S3;
+endif
+
+|Sistem LMS|
+:Kalkulasi & Perbarui XP Creator;
+:Menampilkan Notifikasi Sukses;
+
+|Pengguna (Creator)|
+:Melihat Daftar Materi Terkini;
+stop
+@enduml

@@ -1,0 +1,96 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam roundcorner 10
+
+' --- KELAS SUPER (GENERALIZATION) ---
+class Akun {
+  - idAkun: UUID [1]
+  - namaLengkap: String [1]
+  - email: String [1]
+  - kataSandiHash: String [1]
+  - tanggalDaftar: Date [1]
+  - statusAktif: Boolean [1] = true
+  + login(): Boolean
+  + logout(): void
+  + updateProfil(): void
+}
+
+' --- KELAS SUB (TURUNAN DARI AKUN) ---
+class Pengguna {
+  - xpLearner: Integer [1] = 0
+  - xpCreator: Integer [1] = 0
+  - totalXP: Integer [1] = 0
+  - rankPeringkat: String [0..1]
+  + bacaMateri(idMateri: Integer): void
+  + ikutiKuis(idKuis: Integer): void
+  + unggahMateri(data: Materi): void
+  + buatKuis(data: Kuis): void
+  + getDetailRank(): String
+}
+
+class Admin {
+  - tingkatAkses: String [1]
+  - kodePegawai: String [1]
+  + kelolaPengguna(): void
+  + moderasiMateri(): void
+  + kalkulasiUlangXP(): void
+  + kelolaLeaderboard(): void
+}
+
+' Relasi Generalization
+Akun <|-- Pengguna : <<Generalization>>
+Akun <|-- Admin : <<Generalization>>
+
+' --- KELAS ENTITAS KONTEN ---
+class Materi {
+  - idMateri: Integer [1]
+  - judulMateri: String [1]
+  - kontenMarkdown: String [1]
+  - idPenulis: UUID [1]
+  - tanggalUnggah: Date [1]
+  - totalDilihat: Integer [1] = 0
+  - ratingRataRata: Float [0..1]
+  + renderMarkdown(): String
+  + tambahMateri(): void
+  + editMateri(): void
+  + hapusMateri(): void
+  + beriRating(nilai: Float): void
+}
+
+class Kuis {
+  - idKuis: Integer [1]
+  - judulKuis: String [1]
+  - idMateriTerkait: Integer [0..1]
+  - aturanMarkdown: String [1]
+  - batasWaktuMenit: Integer [1]
+  - poinXPDefault: Integer [1]
+  + tambahKuis(): void
+  + editKuis(): void
+  + hapusKuis(): void
+  + kalkulasiPoin(jawabanBenar: Integer): Integer
+}
+
+class RiwayatBelajar {
+  - idRiwayat: Integer [1]
+  - idPengguna: UUID [1]
+  - idKonten: Integer [1]
+  - tipeKonten: String [1] 
+  - tanggalSelesai: Date [1]
+  - xpDidapat: Integer [1]
+  + catatRiwayatBelajar(): void
+  + totalXpBulanIni(): Integer
+}
+
+' --- RELASI ASSOCIATION & AGGREGATION ---
+' Seorang Pengguna dapat membuat banyak Materi/Kuis
+Pengguna "1" -- "0..*" Materi : Mengunggah >
+Pengguna "1" -- "0..*" Kuis : Membuat >
+
+' Pengguna memiliki riwayat aktivitas belajar
+Pengguna "1" -- "0..*" RiwayatBelajar : Memiliki >
+
+' Materi dapat memiliki kuis terkait
+Materi "1" -- "0..*" Kuis : Memiliki referensi >
+
+@enduml

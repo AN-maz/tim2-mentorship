@@ -1,0 +1,33 @@
+@startuml
+|Pengguna (Creator)|
+start
+:Mengakses Menu Kelola Kuis;
+:Memilih Aksi (Tambah Baru, Edit, Hapus);
+
+if (Aksi yang dipilih?) then (Tambah / Edit)
+  :Mengisi Judul & Aturan Kuis;
+  :Menyusun Soal & Pilihan Jawaban (Markdown);
+  :Mengatur Batas Waktu & Bobot Poin;
+  :Mengeklik Tombol Simpan;
+  
+  |Sistem LMS|
+  :Menerima Payload Data Kuis;
+  :Validasi Format Markdown & Kelengkapan Data;
+  :Eksekusi Native Query (INSERT / UPDATE ke tabel Kuis);
+  
+else (Hapus)
+  |Pengguna (Creator)|
+  :Konfirmasi Penghapusan Kuis;
+  
+  |Sistem LMS|
+  :Eksekusi Native Query (DELETE data Kuis);
+endif
+
+|Sistem LMS|
+:Kalkulasi & Perbarui XP Creator;
+:Menampilkan Notifikasi Sukses;
+
+|Pengguna (Creator)|
+:Diarahkan Kembali ke Daftar Kuis;
+stop
+@enduml

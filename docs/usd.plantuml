@@ -1,0 +1,60 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam handwritten false
+skinparam actorStyle awesome
+
+actor "Users" as U
+actor "Admin" as A
+actor "Google Auth" as G <<External System>>
+
+rectangle "Web App LMS Gamifikasi" {
+  usecase "Login" as UC_Login
+  usecase "Register" as UC_Register
+  
+  usecase "Mencari Materi" as UC_Search
+  usecase "Melihat Materi" as UC_ViewMateri
+  usecase "Memberi Rating" as UC_Rate
+  usecase "Memberi Komentar" as UC_Comment
+  
+  usecase "Kelola Materi (Upload/Edit/Hapus)" as UC_ManageMateriUser
+  usecase "Kelola Kuis (Buat/Edit/Hapus)" as UC_ManageQuizUser
+  
+  usecase "Belajar Materi" as UC_LearnMateri
+  usecase "Mengikuti Kuis" as UC_TakeQuiz
+  
+  usecase "Melihat Leaderboard (Ranked)" as UC_ViewRank
+  
+  usecase "Mengelola Users" as UC_AdminUsers
+  usecase "Mengelola Kuis" as UC_AdminQuiz
+  usecase "Mengelola Materi" as UC_AdminMateri
+  usecase "Manajemen XP & Ranked" as UC_AdminRank
+}
+
+' Relasi Users (Learner & Creator)
+U --> UC_Login
+U --> UC_Register
+U --> UC_ViewMateri
+U --> UC_ManageMateriUser
+U --> UC_ManageQuizUser
+U --> UC_LearnMateri
+U --> UC_TakeQuiz
+U --> UC_ViewRank
+
+' Ekstensi untuk Melihat Materi
+UC_ViewMateri <.. UC_Search : <<extend>>
+UC_ViewMateri <.. UC_Rate : <<extend>>
+UC_ViewMateri <.. UC_Comment : <<extend>>
+
+' Relasi Admin
+A --> UC_Login
+A --> UC_AdminUsers
+A --> UC_AdminQuiz
+A --> UC_AdminMateri
+A --> UC_AdminRank
+
+' Integrasi Sistem Eksternal
+UC_Login <.. G : <<extend>>
+UC_Register <.. G : <<extend>>
+
+@enduml

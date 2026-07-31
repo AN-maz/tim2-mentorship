@@ -1,0 +1,32 @@
+@startuml
+|Admin|
+start
+:Mengakses Menu Manajemen XP & Ranked;
+:Memilih Aksi (Ubah Bobot XP, Reset Peringkat Musiman);
+
+if (Jenis Aksi?) then (Ubah Bobot XP)
+  :Menyesuaikan Parameter/Multiplier XP;
+  :Klik Simpan Konfigurasi;
+  
+  |Sistem LMS|
+  :Menyimpan Konfigurasi Parameter Baru;
+  
+else (Reset Peringkat)
+  |Admin|
+  :Klik "Reset Peringkat (Season Baru)";
+  :Konfirmasi Tindakan;
+  
+  |Sistem LMS|
+  :Eksekusi Native Query 
+  (Arsipkan Pemenang Musim Sebelumnya);
+  :Eksekusi Native Query 
+  (UPDATE total_xp, xp_learner, xp_creator = 0);
+endif
+
+|Sistem LMS|
+:Menampilkan Notifikasi Konfigurasi Berhasil;
+
+|Admin|
+:Selesai Melakukan Manajemen Gamifikasi;
+stop
+@enduml
