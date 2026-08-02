@@ -11,7 +11,7 @@ if (Jenis Aksi?) then (Ubah Bobot XP)
   |Sistem LMS|
   :Menyimpan Konfigurasi Parameter Baru;
   
-else (Reset Peringkat)
+else (Reset Peringkat) 
   |Admin|
   :Klik "Reset Peringkat (Season Baru)";
   :Konfirmasi Tindakan;
