@@ -1,0 +1,1675 @@
+<title>Ruang Belajar — Prototipe LMS Gamifikasi</title>
+
+<style>
+:root{
+  --ground:#F1F0EA;
+  --surface:#FFFFFF;
+  --surface-2:#F7F6F1;
+  --line:#DCD8CD;
+  --line-soft:#E8E5DB;
+  --ink:#1A1815;
+  --ink-2:#4A463D;
+  --muted:#7C7768;
+  --accent:#B87309;
+  --accent-ink:#FFFFFF;
+  --accent-wash:#F6E7CC;
+  --learner:#0E7C74;
+  --learner-wash:#DCEEEC;
+  --creator:#9A3A82;
+  --creator-wash:#F3E1EF;
+  --ok:#2C6E3F;
+  --warn:#9A6410;
+  --crit:#A32C2C;
+  --shadow:0 1px 2px rgba(26,24,21,.06), 0 8px 24px -12px rgba(26,24,21,.18);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#12110E;
+    --surface:#1A1815;
+    --surface-2:#211E1A;
+    --line:#332F28;
+    --line-soft:#282520;
+    --ink:#EDE8DC;
+    --ink-2:#BDB6A6;
+    --muted:#8B8474;
+    --accent:#F0A62B;
+    --accent-ink:#1A1815;
+    --accent-wash:#3A2C13;
+    --learner:#4FC3B8;
+    --learner-wash:#12302E;
+    --creator:#DE8BC8;
+    --creator-wash:#331C2D;
+    --ok:#6FBE84;
+    --warn:#E0A93F;
+    --crit:#E88080;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="light"]{
+  --ground:#F1F0EA; --surface:#FFFFFF; --surface-2:#F7F6F1; --line:#DCD8CD; --line-soft:#E8E5DB;
+  --ink:#1A1815; --ink-2:#4A463D; --muted:#7C7768;
+  --accent:#B87309; --accent-ink:#FFFFFF; --accent-wash:#F6E7CC;
+  --learner:#0E7C74; --learner-wash:#DCEEEC; --creator:#9A3A82; --creator-wash:#F3E1EF;
+  --ok:#2C6E3F; --warn:#9A6410; --crit:#A32C2C;
+  --shadow:0 1px 2px rgba(26,24,21,.06), 0 8px 24px -12px rgba(26,24,21,.18);
+}
+:root[data-theme="dark"]{
+  --ground:#12110E; --surface:#1A1815; --surface-2:#211E1A; --line:#332F28; --line-soft:#282520;
+  --ink:#EDE8DC; --ink-2:#BDB6A6; --muted:#8B8474;
+  --accent:#F0A62B; --accent-ink:#1A1815; --accent-wash:#3A2C13;
+  --learner:#4FC3B8; --learner-wash:#12302E; --creator:#DE8BC8; --creator-wash:#331C2D;
+  --ok:#6FBE84; --warn:#E0A93F; --crit:#E88080;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body,html{margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0; text-wrap:balance; font-weight:650; letter-spacing:-.01em}
+p{margin:0}
+button{font:inherit; color:inherit; cursor:pointer}
+input,textarea,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+/* ---------- shell ---------- */
+.shell{display:grid; grid-template-columns:236px minmax(0,1fr); min-height:100vh}
+.rail{
+  border-right:1px solid var(--line); background:var(--surface);
+  display:flex; flex-direction:column; gap:18px; padding:18px 14px;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:2px 6px 0}
+.brand-mark{
+  width:30px; height:30px; border-radius:8px; background:var(--accent); color:var(--accent-ink);
+  display:grid; place-items:center; font-family:var(--mono); font-weight:700; font-size:13px; flex:none;
+}
+.brand-name{font-family:var(--mono); font-size:13.5px; font-weight:700; letter-spacing:-.02em; line-height:1.15}
+.brand-sub{font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase}
+.nav{display:flex; flex-direction:column; gap:2px}
+.nav-label{
+  font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--muted); padding:12px 8px 5px;
+}
+.nav-item{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:8px 10px; border:0; background:transparent; border-radius:8px;
+  color:var(--ink-2); font-size:14px; transition:background .12s, color .12s;
+}
+.nav-item:hover{background:var(--surface-2); color:var(--ink)}
+.nav-item[aria-current="true"]{background:var(--accent-wash); color:var(--ink); font-weight:600}
+.nav-item svg{flex:none; opacity:.85}
+.rail-foot{margin-top:auto; display:flex; flex-direction:column; gap:10px; padding:0 4px}
+
+.main{min-width:0; display:flex; flex-direction:column}
+.topbar{
+  position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:11px 24px;
+}
+.crumb{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.spacer{flex:1}
+.canvas{padding:26px 24px 80px; max-width:1080px; width:100%}
+
+/* ---------- primitives ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow)}
+.pad{padding:18px}
+.stack{display:flex; flex-direction:column; gap:16px}
+.stack-sm{display:flex; flex-direction:column; gap:8px}
+.row{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.grid{display:grid; gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+
+.page-title{font-size:23px; letter-spacing:-.02em}
+.page-sub{color:var(--muted); font-size:14px; max-width:64ch}
+.eyebrow{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.section-h{display:flex; align-items:baseline; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line-soft); padding-bottom:8px}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.xsmall{font-size:12px}
+
+.btn{
+  display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:8px;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  font-size:14px; font-weight:550; transition:background .12s, border-color .12s, transform .06s;
+}
+.btn:hover{background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600}
+.btn-primary:hover{background:var(--accent); filter:brightness(1.06)}
+.btn-danger{color:var(--crit); border-color:color-mix(in srgb, var(--crit) 35%, var(--line))}
+.btn-ghost{border-color:transparent; background:transparent}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-sm{padding:5px 10px; font-size:12.5px; border-radius:7px}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:12.5px; font-weight:600; color:var(--ink-2)}
+.input, textarea.input, select.input{
+  width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--line);
+  background:var(--surface-2); font-size:14px; transition:border-color .12s;
+}
+.input:focus{border-color:var(--accent); outline:none}
+textarea.input{font-family:var(--mono); font-size:13px; line-height:1.6; resize:vertical; min-height:190px}
+
+.pill{
+  display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:999px;
+  font-family:var(--mono); font-size:11px; letter-spacing:.02em; border:1px solid transparent; white-space:nowrap;
+}
+.pill-learner{background:var(--learner-wash); color:var(--learner); border-color:color-mix(in srgb, var(--learner) 28%, transparent)}
+.pill-creator{background:var(--creator-wash); color:var(--creator); border-color:color-mix(in srgb, var(--creator) 28%, transparent)}
+.pill-accent{background:var(--accent-wash); color:var(--accent); border-color:color-mix(in srgb, var(--accent) 30%, transparent)}
+.pill-neutral{background:var(--surface-2); color:var(--muted); border-color:var(--line)}
+.pill-ok{background:color-mix(in srgb, var(--ok) 14%, transparent); color:var(--ok); border-color:color-mix(in srgb, var(--ok) 32%, transparent)}
+.pill-crit{background:color-mix(in srgb, var(--crit) 13%, transparent); color:var(--crit); border-color:color-mix(in srgb, var(--crit) 32%, transparent)}
+.pill-warn{background:color-mix(in srgb, var(--warn) 15%, transparent); color:var(--warn); border-color:color-mix(in srgb, var(--warn) 32%, transparent)}
+.dot{width:6px; height:6px; border-radius:50%; background:currentColor}
+
+.stat{border:1px solid var(--line); border-radius:var(--r); background:var(--surface); padding:14px 15px; display:flex; flex-direction:column; gap:3px; position:relative; overflow:hidden}
+.stat::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--line)}
+.stat.learner::before{background:var(--learner)}
+.stat.creator::before{background:var(--creator)}
+.stat.total::before{background:var(--accent)}
+.stat-k{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+.stat-v{font-family:var(--mono); font-size:25px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.stat-n{font-size:12px; color:var(--muted)}
+
+.meter{height:6px; border-radius:99px; background:var(--line-soft); overflow:hidden}
+.meter > i{display:block; height:100%; background:var(--accent); border-radius:99px; transition:width .5s ease}
+.meter.learner > i{background:var(--learner)}
+.meter.creator > i{background:var(--creator)}
+
+table{width:100%; border-collapse:collapse; font-size:13.5px}
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+th{
+  text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; padding:10px 14px; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+td{padding:11px 14px; border-bottom:1px solid var(--line-soft); vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+td.num, th.num{font-variant-numeric:tabular-nums; font-family:var(--mono)}
+
+.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.tab{
+  border:0; background:transparent; padding:8px 13px; font-size:13.5px; color:var(--muted);
+  border-bottom:2px solid transparent; margin-bottom:-1px; border-radius:6px 6px 0 0;
+}
+.tab:hover{color:var(--ink); background:var(--surface-2)}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent); font-weight:600}
+
+.note{
+  border-left:3px solid var(--line); padding:9px 12px; background:var(--surface-2);
+  border-radius:0 8px 8px 0; font-size:12.5px; color:var(--ink-2);
+}
+.note .mono{color:var(--muted)}
+.note.sys{border-left-color:var(--accent)}
+
+/* ---------- markdown output ---------- */
+.md{font-size:15px; line-height:1.72; color:var(--ink-2); max-width:68ch}
+.md h2{font-size:20px; margin:22px 0 8px; color:var(--ink)}
+.md h3{font-size:16.5px; margin:20px 0 6px; color:var(--ink)}
+.md h4{font-size:14px; margin:16px 0 4px; color:var(--ink); font-family:var(--mono); letter-spacing:.02em}
+.md p{margin:0 0 12px}
+.md ul,.md ol{margin:0 0 12px; padding-left:22px}
+.md li{margin:3px 0}
+.md code{font-family:var(--mono); font-size:12.5px; background:var(--surface-2); border:1px solid var(--line-soft); padding:1px 5px; border-radius:5px}
+.md pre{background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; margin:0 0 14px}
+.md pre code{border:0; background:none; padding:0; font-size:12.5px; line-height:1.6}
+.md blockquote{margin:0 0 12px; padding:2px 0 2px 14px; border-left:3px solid var(--accent); color:var(--ink-2)}
+.md hr{border:0; border-top:1px solid var(--line); margin:20px 0}
+.md a{color:var(--accent)}
+.md strong{color:var(--ink)}
+
+/* ---------- auth ---------- */
+.auth{min-height:100vh; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.auth-art{
+  background:var(--surface); border-right:1px solid var(--line); padding:44px;
+  display:flex; flex-direction:column; justify-content:center; gap:22px;
+}
+.auth-form{display:flex; align-items:center; justify-content:center; padding:36px 24px}
+.auth-form > div{width:100%; max-width:390px}
+.ascii{
+  font-family:var(--mono); font-size:clamp(6px,1.05vw,11px); line-height:1.25; color:var(--accent);
+  white-space:pre; overflow-x:auto; margin:0;
+}
+.auth-points{display:flex; flex-direction:column; gap:11px; max-width:46ch}
+.auth-point{display:flex; gap:11px; align-items:flex-start; font-size:13.5px; color:var(--ink-2)}
+.auth-point b{color:var(--ink); font-weight:600}
+.divider{display:flex; align-items:center; gap:10px; color:var(--muted); font-size:11.5px; font-family:var(--mono)}
+.divider::before,.divider::after{content:""; height:1px; background:var(--line); flex:1}
+.alert{border-radius:8px; padding:9px 12px; font-size:13px; border:1px solid}
+.alert-err{background:color-mix(in srgb, var(--crit) 10%, transparent); border-color:color-mix(in srgb, var(--crit) 30%, transparent); color:var(--crit)}
+.alert-ok{background:color-mix(in srgb, var(--ok) 12%, transparent); border-color:color-mix(in srgb, var(--ok) 30%, transparent); color:var(--ok)}
+
+/* ---------- lists / cards ---------- */
+.item{
+  display:flex; gap:14px; align-items:flex-start; padding:14px 16px; border:1px solid var(--line);
+  border-radius:var(--r); background:var(--surface); text-align:left; width:100%; transition:border-color .12s, background .12s;
+}
+button.item{cursor:pointer}
+button.item:hover{border-color:var(--accent); background:var(--surface-2)}
+.item-body{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px}
+.item-title{font-size:15px; font-weight:600; letter-spacing:-.01em}
+.item-meta{display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted); font-family:var(--mono)}
+.thumb{
+  width:44px; height:44px; border-radius:9px; flex:none; display:grid; place-items:center;
+  font-family:var(--mono); font-size:15px; font-weight:700; background:var(--accent-wash); color:var(--accent);
+}
+.stars{display:inline-flex; gap:2px}
+.star{border:0; background:none; padding:0; line-height:1; color:var(--line); font-size:17px; transition:color .1s}
+.star.on{color:var(--accent)}
+button.star:hover{color:var(--accent)}
+
+.comment{display:flex; flex-direction:column; gap:3px; padding:11px 0; border-bottom:1px solid var(--line-soft)}
+.comment:last-child{border-bottom:0}
+
+/* ---------- quiz ---------- */
+.opt{
+  display:flex; gap:11px; align-items:center; width:100%; text-align:left; padding:12px 14px;
+  border:1px solid var(--line); border-radius:9px; background:var(--surface); transition:border-color .12s, background .12s;
+}
+.opt:hover{border-color:var(--accent)}
+.opt[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-wash)}
+.opt-key{
+  width:24px; height:24px; border-radius:6px; flex:none; display:grid; place-items:center;
+  font-family:var(--mono); font-size:12px; background:var(--surface-2); border:1px solid var(--line);
+}
+.opt[aria-pressed="true"] .opt-key{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.opt.right{border-color:var(--ok); background:color-mix(in srgb, var(--ok) 10%, transparent)}
+.opt.wrong{border-color:var(--crit); background:color-mix(in srgb, var(--crit) 9%, transparent)}
+.timer{font-family:var(--mono); font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.timer.low{color:var(--crit)}
+
+/* ---------- leaderboard ---------- */
+.lb-row{display:grid; grid-template-columns:30px 1fr auto; gap:12px; align-items:center; padding:9px 12px; border-radius:8px}
+.lb-row + .lb-row{border-top:1px solid var(--line-soft)}
+.lb-row.me{background:var(--accent-wash)}
+.lb-rank{font-family:var(--mono); font-size:13px; font-weight:700; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+.lb-row:nth-child(1) .lb-rank{color:var(--accent); font-size:15px}
+
+/* ---------- modal / toast ---------- */
+.scrim{position:fixed; inset:0; background:rgba(10,9,7,.55); display:grid; place-items:center; padding:20px; z-index:60}
+.modal{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:20px; max-width:440px; width:100%; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px}
+.toasts{position:fixed; right:20px; bottom:20px; z-index:80; display:flex; flex-direction:column; gap:9px; align-items:flex-end}
+.toast{
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:9px; padding:10px 14px; box-shadow:var(--shadow); max-width:330px; font-size:13.5px;
+  animation:slide .22s ease;
+}
+.toast.learner{border-left-color:var(--learner)}
+.toast.creator{border-left-color:var(--creator)}
+.toast.sys{border-left-color:var(--ok)}
+.toast b{display:block; font-size:12px; font-family:var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); font-weight:600}
+@keyframes slide{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+
+.role-switch{display:inline-flex; padding:2px; background:var(--surface-2); border:1px solid var(--line); border-radius:9px; gap:2px}
+.role-switch button{border:0; background:transparent; padding:4px 11px; border-radius:7px; font-size:12.5px; font-family:var(--mono); color:var(--muted)}
+.role-switch button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow); font-weight:600}
+
+.uc-file{font-family:var(--mono); font-size:11.5px; color:var(--muted); white-space:nowrap}
+.empty{padding:34px 16px; text-align:center; color:var(--muted); font-size:13.5px; border:1px dashed var(--line); border-radius:var(--r)}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static; height:auto; border-right:0; border-bottom:1px solid var(--line); flex-direction:column}
+  .rail-foot{margin-top:8px}
+  .nav{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .auth{grid-template-columns:1fr}
+  .auth-art{border-right:0; border-bottom:1px solid var(--line); padding:26px}
+  .canvas{padding:20px 15px 70px}
+  .topbar{padding:10px 15px}
+}
+</style>
+
+<div id="root"></div>
+<div class="toasts" id="toasts"></div>
+<div id="modal-slot"></div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   Prototipe LMS Gamifikasi "Ruang Belajar" (tim2-mentorship)
+   Setiap layar diturunkan langsung dari docs/*.plantuml
+   ===================================================================== */
+
+/* ---------- util ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (n) => Number(n).toLocaleString("id-ID");
+
+/* ---------- markdown renderer (inline, tanpa library eksternal) ---------- */
+function inlineMd(t) {
+  return t
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|\W)\*([^*\n]+)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" onclick="return false">$1</a>');
+}
+function md(src) {
+  const lines = esc(src || "").split("\n");
+  let out = "", list = null, inCode = false, code = "";
+  const closeList = () => { if (list) { out += "</" + list + ">"; list = null; } };
+  for (const raw of lines) {
+    const l = raw.replace(/\s+$/, "");
+    if (/^```/.test(l)) {
+      if (inCode) { out += "<pre><code>" + code + "</code></pre>"; code = ""; inCode = false; }
+      else { closeList(); inCode = true; }
+      continue;
+    }
+    if (inCode) { code += l + "\n"; continue; }
+    if (!l.trim()) { closeList(); continue; }
+    let m;
+    if ((m = l.match(/^(#{1,4})\s+(.*)/))) { closeList(); const n = Math.min(m[1].length + 1, 4); out += "<h" + n + ">" + inlineMd(m[2]) + "</h" + n + ">"; continue; }
+    if (/^(---|\*\*\*)\s*$/.test(l)) { closeList(); out += "<hr>"; continue; }
+    if ((m = l.match(/^[-*]\s+(.*)/))) { if (list !== "ul") { closeList(); out += "<ul>"; list = "ul"; } out += "<li>" + inlineMd(m[1]) + "</li>"; continue; }
+    if ((m = l.match(/^\d+\.\s+(.*)/))) { if (list !== "ol") { closeList(); out += "<ol>"; list = "ol"; } out += "<li>" + inlineMd(m[1]) + "</li>"; continue; }
+    if ((m = l.match(/^&gt;\s?(.*)/))) { closeList(); out += "<blockquote>" + inlineMd(m[1]) + "</blockquote>"; continue; }
+    closeList(); out += "<p>" + inlineMd(l) + "</p>";
+  }
+  if (inCode) out += "<pre><code>" + code + "</code></pre>";
+  closeList();
+  return out;
+}
+
+/* ---------- icons ---------- */
+const ICON = {
+  home: "M3 10.5 10 4l7 6.5V17a1 1 0 0 1-1 1h-4v-5H8v5H4a1 1 0 0 1-1-1z",
+  book: "M4 4h5a2 2 0 0 1 2 2v10a2 2 0 0 0-2-2H4zm12 0h-5a2 2 0 0 0-2 2v10a2 2 0 0 1 2-2h5z",
+  quiz: "M7 7a3 3 0 1 1 4 2.8c-.6.3-1 .9-1 1.6v.6m0 3h.01M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z",
+  trophy: "M6 3h8v4a4 4 0 0 1-8 0zM6 4H3v2a3 3 0 0 0 3 3M14 4h3v2a3 3 0 0 1-3 3M8 17h4M10 11v6",
+  studio: "M4 15.5 14 5.5l1.5 1.5L5.5 17H4zM12.5 7 15 4.5 17 6.5 14.5 9M3 20h14",
+  users: "M7 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM2 18v-1a5 5 0 0 1 10 0v1m3-6.2a4 4 0 0 1 3 3.9V18",
+  shield: "M10 2.5 4 5v5c0 3.6 2.4 6.6 6 7.5 3.6-.9 6-3.9 6-7.5V5z",
+  gauge: "M10 17a7 7 0 1 1 7-7M10 10l4-2.5",
+  map: "M3 5.5 7.5 4l5 2L17 4.5V15l-4.5 1.5-5-2L3 16zM7.5 4v10.5M12.5 6v10.5",
+  play: "M6 4.5 15 10l-9 5.5z",
+  search: "M9 15A6 6 0 1 0 9 3a6 6 0 0 0 0 12zm4.5-1.5L17 17",
+  logout: "M12 6V4H4v12h8v-2m2-7 3 3-3 3m3-3H8",
+};
+function icon(k, s = 17) {
+  return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + ICON[k] + '"/></svg>';
+}
+
+/* ---------- data awal (nama field mengikuti docs/classDiagram.plantuml) ---------- */
+const RANKS = [
+  { nama: "Perunggu", min: 0 },
+  { nama: "Perak", min: 400 },
+  { nama: "Emas", min: 900 },
+  { nama: "Platinum", min: 1600 },
+  { nama: "Legenda", min: 2600 },
+];
+const rankOf = (xp) => { let r = RANKS[0]; for (const t of RANKS) if (xp >= t.min) r = t; return r; };
+const nextRank = (xp) => RANKS.find((t) => t.min > xp) || null;
+
+const state = {
+  route: "login",
+  role: null,               // "user" | "admin"
+  meId: "u-01",
+  season: 3,
+  authError: "", authOk: "",
+  authTab: "manual", regTab: "manual",
+  search: "", adminSearch: "", adminTab: "materi",
+  openMateri: null, openKuis: null, learnId: null,
+  editMateri: null, editKuis: null,
+  quiz: null, quizResult: null,
+  modal: null,
+  xpConfig: {
+    multiplierLearner: 1.0,
+    multiplierCreator: 1.0,
+    xpBacaMateri: 25,
+    xpSelesaiKuis: 60,
+    xpUnggahMateri: 90,
+    xpBuatKuis: 70,
+  },
+  akun: [
+    { idAkun: "u-01", namaLengkap: "Yuda Aditya", email: "yuda@rb.id", peran: "Users", xpLearner: 640, xpCreator: 430, statusAktif: true, tanggalDaftar: "2026-01-12" },
+    { idAkun: "u-02", namaLengkap: "Nadia Rahmawati", email: "nadia@rb.id", peran: "Users", xpLearner: 1180, xpCreator: 260, statusAktif: true, tanggalDaftar: "2025-11-03" },
+    { idAkun: "u-03", namaLengkap: "Bagas Prakoso", email: "bagas@rb.id", peran: "Users", xpLearner: 310, xpCreator: 1420, statusAktif: true, tanggalDaftar: "2025-09-27" },
+    { idAkun: "u-04", namaLengkap: "Siti Halimah", email: "siti@rb.id", peran: "Users", xpLearner: 880, xpCreator: 720, statusAktif: true, tanggalDaftar: "2026-02-19" },
+    { idAkun: "u-05", namaLengkap: "Rizky Ananda", email: "rizky@rb.id", peran: "Users", xpLearner: 205, xpCreator: 95, statusAktif: false, tanggalDaftar: "2026-04-08" },
+    { idAkun: "u-06", namaLengkap: "Made Wirawan", email: "made@rb.id", peran: "Users", xpLearner: 520, xpCreator: 990, statusAktif: true, tanggalDaftar: "2025-12-30" },
+    { idAkun: "a-01", namaLengkap: "Admin Ruang Belajar", email: "admin@rb.id", peran: "Admin", kodePegawai: "RB-ADM-01", tingkatAkses: "Super", xpLearner: 0, xpCreator: 0, statusAktif: true, tanggalDaftar: "2025-08-01" },
+  ],
+  materi: [
+    {
+      idMateri: 1, judulMateri: "Native Query PostgreSQL Tanpa ORM", idPenulis: "u-03",
+      tanggalUnggah: "2026-06-14", totalDilihat: 1284, ratingRataRata: 4.6, jumlahRating: 41, statusPublik: true,
+      kontenMarkdown: "## Kenapa tanpa ORM?\n\nORM menyembunyikan biaya kueri. Dengan **native query** kamu melihat persis apa yang dieksekusi PostgreSQL, termasuk urutan `JOIN` dan penggunaan indeks.\n\n### Parameterized query\n\nJangan pernah menyambung string SQL dari input pengguna.\n\n```js\nconst { rows } = await db.query(\n  'SELECT id_materi, judul_materi FROM materi WHERE judul_materi ILIKE $1',\n  ['%' + keyword + '%']\n);\n```\n\n### Checklist\n\n- Selalu pakai placeholder `$1`, `$2`\n- Batasi hasil dengan `LIMIT` dan paginasi keyset\n- Baca rencana eksekusi lewat `EXPLAIN ANALYZE`\n\n> Kalau sebuah kueri butuh lebih dari 3 JOIN, pertimbangkan view atau materialized view.",
+      komentar: [
+        { oleh: "Nadia Rahmawati", teks: "Bagian EXPLAIN ANALYZE-nya paling kepakai. Ditunggu lanjutan soal indeks partial.", tanggal: "2026-06-20" },
+        { oleh: "Siti Halimah", teks: "Contoh parameterized query-nya jelas banget, langsung saya pakai di tugas.", tanggal: "2026-07-02" },
+      ],
+    },
+    {
+      idMateri: 2, judulMateri: "Dasar JWT untuk Sesi Login", idPenulis: "u-06",
+      tanggalUnggah: "2026-05-28", totalDilihat: 902, ratingRataRata: 4.2, jumlahRating: 28, statusPublik: true,
+      kontenMarkdown: "## Anatomi sebuah token\n\nJWT terdiri dari tiga bagian yang dipisah titik: header, payload, dan signature.\n\n```\nheader.payload.signature\n```\n\n### Yang tidak boleh masuk payload\n\n- Kata sandi atau hash-nya\n- Data pribadi yang sensitif\n- Apa pun yang belum siap dibaca publik — payload hanya di-encode base64, **bukan dienkripsi**\n\n### Masa berlaku\n\n1. Access token pendek, 15 menit\n2. Refresh token panjang, simpan di httpOnly cookie\n3. Cabut refresh token saat pengguna logout\n\n> Signature hanya membuktikan token tidak diubah, bukan bahwa pemakainya berhak.",
+      komentar: [{ oleh: "Bagas Prakoso", teks: "Penjelasan refresh token-nya membantu, sebelumnya saya simpan di localStorage.", tanggal: "2026-06-05" }],
+    },
+    {
+      idMateri: 3, judulMateri: "Menyusun Materi Markdown yang Rapi", idPenulis: "u-02",
+      tanggalUnggah: "2026-07-09", totalDilihat: 466, ratingRataRata: 4.8, jumlahRating: 19, statusPublik: true,
+      kontenMarkdown: "## Panduan penulisan\n\nSemua materi di Ruang Belajar wajib ditulis dalam Markdown supaya bisa dirender seragam.\n\n### Aturan yang dipakai renderer\n\n- Judul bagian memakai `##`, sub-bagian `###`\n- Blok kode memakai tiga backtick\n- Gambar pendukung diunggah lewat tombol lampiran, bukan tautan luar\n\n### Panjang ideal\n\nSatu materi sebaiknya selesai dibaca dalam 7–10 menit. Kalau lebih panjang, pecah jadi seri.\n\n> Materi yang rapi lebih sering dijadikan rujukan kuis oleh pengguna lain.",
+      komentar: [],
+    },
+    {
+      idMateri: 4, judulMateri: "Menghitung XP: Rumus di Balik Peringkat", idPenulis: "u-04",
+      tanggalUnggah: "2026-07-21", totalDilihat: 231, ratingRataRata: 4.0, jumlahRating: 8, statusPublik: false,
+      kontenMarkdown: "## Dua kantong XP\n\nRuang Belajar memisahkan **XP Learner** dan **XP Creator** supaya pembaca aktif dan penulis aktif sama-sama punya jalur naik.\n\n### Rumus dasar\n\n```\ntotalXP = (xpLearner * multiplierLearner) + (xpCreator * multiplierCreator)\n```\n\n### Kenapa dipisah\n\n- Learner dihitung dari materi selesai dibaca dan kuis yang dikerjakan\n- Creator dihitung dari materi diunggah dan kuis yang dibuat\n- Admin dapat mengubah multiplier tiap musim tanpa menyentuh riwayat",
+      komentar: [],
+    },
+  ],
+  kuis: [
+    {
+      idKuis: 1, judulKuis: "Kuis: Native Query PostgreSQL", idMateriTerkait: 1, idPembuat: "u-03",
+      batasWaktuMenit: 3, poinXPDefault: 60, statusPublik: true,
+      aturanMarkdown: "- Kerjakan **tanpa membuka materi** di tab lain\n- Satu soal satu jawaban benar\n- Waktu habis, jawaban otomatis dikumpulkan",
+      soal: [
+        { pertanyaan: "Placeholder yang benar untuk parameterized query di driver `pg` adalah:", opsi: ["`?`", "`$1`", "`:param`", "`%s`"], kunci: 1 },
+        { pertanyaan: "Perintah untuk melihat rencana eksekusi beserta waktu nyatanya:", opsi: ["`DESCRIBE`", "`SHOW PLAN`", "`EXPLAIN ANALYZE`", "`PROFILE`"], kunci: 2 },
+        { pertanyaan: "Paginasi yang lebih stabil pada tabel besar:", opsi: ["Keyset pagination", "OFFSET besar", "Acak dengan RANDOM()", "Ambil semua lalu potong di aplikasi"], kunci: 0 },
+      ],
+    },
+    {
+      idKuis: 2, judulKuis: "Kuis: Dasar JWT", idMateriTerkait: 2, idPembuat: "u-06",
+      batasWaktuMenit: 2, poinXPDefault: 45, statusPublik: true,
+      aturanMarkdown: "- Kuis singkat, 2 soal\n- Nilai penuh jika keduanya benar",
+      soal: [
+        { pertanyaan: "Payload JWT sebenarnya:", opsi: ["Dienkripsi kuat", "Hanya di-encode base64", "Ditandatangani dan disembunyikan", "Disimpan di server"], kunci: 1 },
+        { pertanyaan: "Tempat paling aman menyimpan refresh token di browser:", opsi: ["localStorage", "sessionStorage", "Cookie httpOnly", "Variabel global"], kunci: 2 },
+      ],
+    },
+    {
+      idKuis: 3, judulKuis: "Kuis: Gaya Penulisan Markdown", idMateriTerkait: 3, idPembuat: "u-02",
+      batasWaktuMenit: 2, poinXPDefault: 40, statusPublik: true,
+      aturanMarkdown: "- Pastikan sudah membaca panduan penulisan\n- Boleh diulang setelah 24 jam",
+      soal: [
+        { pertanyaan: "Penanda judul bagian pada materi Ruang Belajar:", opsi: ["`#`", "`##`", "`###`", "Teks tebal"], kunci: 1 },
+        { pertanyaan: "Gambar pendukung materi sebaiknya:", opsi: ["Ditaut dari situs luar", "Diunggah lewat lampiran materi", "Ditempel sebagai base64", "Tidak dipakai"], kunci: 1 },
+      ],
+    },
+  ],
+  riwayat: [
+    { idRiwayat: 1, idPengguna: "u-01", idKonten: 2, tipeKonten: "Materi", judul: "Dasar JWT untuk Sesi Login", tanggalSelesai: "2026-07-28", xpDidapat: 25 },
+    { idRiwayat: 2, idPengguna: "u-01", idKonten: 2, tipeKonten: "Kuis", judul: "Kuis: Dasar JWT", tanggalSelesai: "2026-07-28", xpDidapat: 45 },
+    { idRiwayat: 3, idPengguna: "u-01", idKonten: 3, tipeKonten: "Materi", judul: "Menyusun Materi Markdown yang Rapi", tanggalSelesai: "2026-07-31", xpDidapat: 25 },
+  ],
+  arsipMusim: [{ musim: 2, juaraLearner: "Nadia Rahmawati", juaraCreator: "Bagas Prakoso", diarsipkan: "2026-04-30" }],
+};
+
+/* ---------- helper domain ---------- */
+const me = () => state.akun.find((a) => a.idAkun === state.meId) || state.akun[0];
+const akunById = (id) => state.akun.find((a) => a.idAkun === id);
+const namaPenulis = (id) => (akunById(id) || {}).namaLengkap || "Pengguna terhapus";
+const totalXP = (a) => Math.round(a.xpLearner * state.xpConfig.multiplierLearner + a.xpCreator * state.xpConfig.multiplierCreator);
+const materiById = (id) => state.materi.find((m) => m.idMateri === id);
+const kuisById = (id) => state.kuis.find((k) => k.idKuis === id);
+const sudahSelesai = (tipe, id) => state.riwayat.some((r) => r.idPengguna === state.meId && r.tipeKonten === tipe && r.idKonten === id);
+
+let toastSeq = 0;
+function toast(judul, pesan, jenis) {
+  const el = document.createElement("div");
+  el.className = "toast " + (jenis || "sys");
+  el.innerHTML = "<b>" + esc(judul) + "</b>" + esc(pesan);
+  const id = ++toastSeq;
+  el.dataset.id = String(id);
+  $("#toasts").appendChild(el);
+  setTimeout(() => { el.remove(); }, 4200);
+}
+
+function catatRiwayat(tipe, idKonten, judul, xpDasar, kategori) {
+  const a = me();
+  const xp = Math.round(xpDasar * (kategori === "learner" ? state.xpConfig.multiplierLearner : state.xpConfig.multiplierCreator));
+  if (kategori === "learner") a.xpLearner += xp; else a.xpCreator += xp;
+  state.riwayat.unshift({
+    idRiwayat: state.riwayat.length + 1, idPengguna: a.idAkun, idKonten: idKonten,
+    tipeKonten: tipe, judul: judul, tanggalSelesai: "2026-08-02", xpDidapat: xp,
+  });
+  toast(kategori === "learner" ? "XP Learner bertambah" : "XP Creator bertambah", "+" + xp + " XP · " + judul, kategori);
+  return xp;
+}
+
+/* =====================================================================
+   NAVIGASI
+   ===================================================================== */
+const NAV_USER = [
+  { id: "beranda", label: "Beranda", icon: "home" },
+  { id: "materi", label: "Jelajah Materi", icon: "book" },
+  { id: "kuis", label: "Kuis", icon: "quiz" },
+  { id: "leaderboard", label: "Leaderboard", icon: "trophy" },
+  { id: "studio", label: "Studio Kreator", icon: "studio" },
+];
+const NAV_ADMIN = [
+  { id: "admin-users", label: "Kelola Users", icon: "users" },
+  { id: "admin-konten", label: "Moderasi Konten", icon: "shield" },
+  { id: "admin-xp", label: "XP & Ranked", icon: "gauge" },
+];
+const CRUMB = {
+  beranda: ["Users", "Beranda"], materi: ["Users", "Melihat Materi"], "materi-detail": ["Users", "Melihat Materi · Detail"],
+  belajar: ["Users", "Belajar Materi"], kuis: ["Users", "Mengikuti Kuis"], "kuis-main": ["Users", "Mengikuti Kuis · Sesi"],
+  "kuis-hasil": ["Users", "Mengikuti Kuis · Hasil"], leaderboard: ["Users", "Melihat Leaderboard"],
+  studio: ["Users", "Kelola Materi & Kuis"], "studio-materi": ["Users", "Kelola Materi"], "studio-kuis": ["Users", "Kelola Kuis"],
+  "admin-users": ["Admin", "Mengelola Users"], "admin-konten": ["Admin", "Mengelola Materi & Kuis"],
+  "admin-xp": ["Admin", "Manajemen XP & Ranked"], peta: ["Dokumentasi", "Peta Use Case"],
+};
+
+function go(route, patch) {
+  Object.assign(state, patch || {});
+  state.route = route;
+  window.scrollTo({ top: 0, behavior: "instant" });
+  render();
+}
+
+/* =====================================================================
+   LAYAR: LOGIN  —  docs/activity-diagram/login.plantuml
+   ===================================================================== */
+function viewLogin() {
+  const manual = state.authTab === "manual";
+  return '<div class="auth">' + authArt() + '<div class="auth-form"><div class="stack">' +
+    '<div class="stack-sm"><h1 class="page-title">Masuk ke Ruang Belajar</h1>' +
+    '<p class="page-sub small">Pilih metode login. Alur ini mengikuti percabangan pada <span class="mono">login.plantuml</span>.</p></div>' +
+    (state.authOk ? '<div class="alert alert-ok">' + esc(state.authOk) + "</div>" : "") +
+    (state.authError ? '<div class="alert alert-err">' + esc(state.authError) + "</div>" : "") +
+    '<div class="tabs" role="tablist">' +
+      '<button class="tab" role="tab" aria-selected="' + manual + '" data-act="auth-tab" data-v="manual">Manual</button>' +
+      '<button class="tab" role="tab" aria-selected="' + !manual + '" data-act="auth-tab" data-v="google">Google Auth</button>' +
+    "</div>" +
+    (manual
+      ? '<form class="stack" data-act="login-submit">' +
+          '<div class="field"><label for="li-email">Email</label><input class="input" id="li-email" type="email" value="yuda@rb.id" autocomplete="off"></div>' +
+          '<div class="field"><label for="li-pass">Kata sandi</label><input class="input" id="li-pass" type="password" value="rahasia123"></div>' +
+          '<div class="field"><label for="li-role">Masuk sebagai</label><select class="input" id="li-role"><option value="user">Users (Learner &amp; Creator)</option><option value="admin">Admin</option></select></div>' +
+          '<button class="btn btn-primary" type="submit" style="justify-content:center">Masuk</button>' +
+          '<p class="xsmall muted">Akun uji: <span class="mono">yuda@rb.id</span> atau <span class="mono">admin@rb.id</span>, sandi <span class="mono">rahasia123</span>. Kredensial lain akan memicu cabang gagal.</p>' +
+        "</form>"
+      : '<div class="stack">' +
+          '<div class="note sys">Aktor eksternal <b>Google Auth</b> memproses otentikasi, sistem LMS hanya menerima dan memverifikasi token JWT-nya.</div>' +
+          '<button class="btn" data-act="login-google" data-v="user" style="justify-content:center">Login via Google — sebagai Users</button>' +
+          '<button class="btn" data-act="login-google" data-v="admin" style="justify-content:center">Login via Google — sebagai Admin</button>' +
+        "</div>") +
+    '<div class="divider">atau</div>' +
+    '<button class="btn btn-ghost" data-act="nav" data-v="register" style="justify-content:center">Belum punya akun? Daftar</button>' +
+    '<button class="btn btn-ghost btn-sm" data-act="nav" data-v="peta" style="justify-content:center">Lihat peta use case &amp; cakupan diagram</button>' +
+  "</div></div></div>";
+}
+
+function authArt() {
+  const logo = [
+    "  ____                         ",
+    " |  _ \\ _   _  __ _ _ __   __ _ ",
+    " | |_) | | | |/ _` | '_ \\ / _` |",
+    " |  _ <| |_| | (_| | | | | (_| |",
+    " |_| \\_\\\\__,_|\\__,_|_| |_|\\__, |",
+    "  B E L A J A R           |___/ ",
+  ].join("\n");
+  return '<div class="auth-art"><div class="stack">' +
+    '<pre class="ascii">' + esc(logo) + "</pre>" +
+    '<div class="stack-sm"><span class="eyebrow">Prototipe · Musim ' + state.season + '</span>' +
+    '<h2 style="font-size:19px">Tidak ada kata terlambat untuk belajar</h2>' +
+    '<p class="small muted" style="max-width:44ch">Berbagi dan mempelajari ilmu lewat materi Markdown, dengan dua jalur XP supaya pembaca dan penulis sama-sama naik peringkat.</p></div>' +
+    '<div class="auth-points">' +
+      '<div class="auth-point"><span class="pill pill-learner">XP Learner</span><span>Didapat dengan <b>membaca materi</b> dan <b>mengikuti kuis</b>.</span></div>' +
+      '<div class="auth-point"><span class="pill pill-creator">XP Creator</span><span>Didapat dengan <b>mengunggah materi</b> dan <b>membuat kuis</b>.</span></div>' +
+      '<div class="auth-point"><span class="pill pill-accent">Ranked</span><span>XP dikalkulasi berkala jadi <b>leaderboard musiman</b>.</span></div>' +
+    "</div>" +
+    '<p class="xsmall muted mono">React · Express · PostgreSQL native query · JWT · AWS S3</p>' +
+  "</div></div>";
+}
+
+/* =====================================================================
+   LAYAR: REGISTER  —  docs/activity-diagram/register.plantuml
+   ===================================================================== */
+function viewRegister() {
+  const manual = state.regTab === "manual";
+  return '<div class="auth">' + authArt() + '<div class="auth-form"><div class="stack">' +
+    '<div class="stack-sm"><h1 class="page-title">Buat akun baru</h1>' +
+    '<p class="page-sub small">Sistem mengecek ketersediaan email sebelum menyimpan data. Alur mengikuti <span class="mono">register.plantuml</span>.</p></div>' +
+    (state.authError ? '<div class="alert alert-err">' + esc(state.authError) + "</div>" : "") +
+    '<div class="tabs" role="tablist">' +
+      '<button class="tab" role="tab" aria-selected="' + manual + '" data-act="reg-tab" data-v="manual">Manual</button>' +
+      '<button class="tab" role="tab" aria-selected="' + !manual + '" data-act="reg-tab" data-v="google">Google Auth</button>' +
+    "</div>" +
+    (manual
+      ? '<form class="stack" data-act="register-submit">' +
+          '<div class="field"><label for="rg-nama">Nama lengkap</label><input class="input" id="rg-nama" value="Dewi Lestari"></div>' +
+          '<div class="field"><label for="rg-email">Email</label><input class="input" id="rg-email" type="email" value="dewi@rb.id"></div>' +
+          '<div class="field"><label for="rg-pass">Kata sandi</label><input class="input" id="rg-pass" type="password" value="rahasia123"></div>' +
+          '<button class="btn btn-primary" type="submit" style="justify-content:center">Daftar</button>' +
+          '<p class="xsmall muted">Coba isi <span class="mono">nadia@rb.id</span> untuk melihat cabang “Email Sudah Digunakan”.</p>' +
+        "</form>"
+      : '<div class="stack">' +
+          '<div class="note sys">Google Auth melakukan otentikasi lalu mengekstrak data profil; sistem LMS mengambil nama dan email dari sana.</div>' +
+          '<button class="btn" data-act="register-google" style="justify-content:center">Daftar via Google</button>' +
+        "</div>") +
+    '<div class="divider">atau</div>' +
+    '<button class="btn btn-ghost" data-act="nav" data-v="login" style="justify-content:center">Sudah punya akun? Masuk</button>' +
+  "</div></div></div>";
+}
+
+/* =====================================================================
+   LAYAR: BERANDA
+   ===================================================================== */
+function viewBeranda() {
+  const a = me(), t = totalXP(a), r = rankOf(t), nx = nextRank(t);
+  const progress = nx ? Math.min(100, Math.round(((t - r.min) / (nx.min - r.min)) * 100)) : 100;
+  const riwayat = state.riwayat.filter((x) => x.idPengguna === a.idAkun).slice(0, 5);
+  const belumDibaca = state.materi.filter((m) => m.statusPublik && !sudahSelesai("Materi", m.idMateri)).slice(0, 3);
+
+  return '<div class="stack" style="gap:24px">' +
+    '<div class="stack-sm"><span class="eyebrow">Beranda · Musim ' + state.season + '</span>' +
+    '<h1 class="page-title">Halo, ' + esc(a.namaLengkap.split(" ")[0]) + "</h1>" +
+    '<p class="page-sub">Kamu di peringkat <b>' + r.nama + "</b>" + (nx ? ", " + fmt(nx.min - t) + " XP lagi menuju " + nx.nama : ", peringkat tertinggi") + ".</p></div>" +
+
+    '<div class="grid g3">' +
+      stat("total", "Total XP", fmt(t), r.nama + " · musim berjalan") +
+      stat("learner", "XP Learner", fmt(a.xpLearner), "Baca materi &amp; kuis") +
+      stat("creator", "XP Creator", fmt(a.xpCreator), "Unggah materi &amp; kuis") +
+    "</div>" +
+
+    '<div class="card pad stack-sm">' +
+      '<div class="row" style="justify-content:space-between"><span class="eyebrow">Menuju peringkat berikutnya</span>' +
+      '<span class="mono xsmall num">' + fmt(t) + " / " + (nx ? fmt(nx.min) : "MAX") + " XP</span></div>" +
+      '<div class="meter"><i style="width:' + progress + '%"></i></div>' +
+      '<p class="xsmall muted">Multiplier aktif: Learner ×' + state.xpConfig.multiplierLearner.toFixed(2) + " · Creator ×" + state.xpConfig.multiplierCreator.toFixed(2) + " (diatur Admin).</p>" +
+    "</div>" +
+
+    '<div class="grid g2">' +
+      '<div class="stack">' +
+        '<div class="section-h"><h3 style="font-size:15px">Lanjut belajar</h3><button class="btn btn-ghost btn-sm" data-act="nav" data-v="materi">Semua materi</button></div>' +
+        (belumDibaca.length ? belumDibaca.map(materiItem).join("") : '<div class="empty">Semua materi publik sudah kamu selesaikan.</div>') +
+      "</div>" +
+      '<div class="stack">' +
+        '<div class="section-h"><h3 style="font-size:15px">Riwayat belajar</h3><span class="uc-file">RiwayatBelajar</span></div>' +
+        '<div class="card pad">' + (riwayat.length
+          ? riwayat.map((x) => '<div class="comment"><div class="row" style="justify-content:space-between"><b class="small">' + esc(x.judul) + "</b>" +
+              '<span class="pill ' + (x.tipeKonten === "Kuis" ? "pill-learner" : "pill-learner") + ' num">+' + x.xpDidapat + " XP</span></div>" +
+              '<span class="xsmall muted mono">' + x.tipeKonten + " · " + x.tanggalSelesai + "</span></div>").join("")
+          : '<p class="small muted">Belum ada aktivitas.</p>') + "</div>" +
+      "</div>" +
+    "</div>" +
+  "</div>";
+}
+function stat(kind, k, v, n) {
+  return '<div class="stat ' + kind + '"><span class="stat-k">' + k + '</span><span class="stat-v">' + v + '</span><span class="stat-n">' + n + "</span></div>";
+}
+
+/* =====================================================================
+   LAYAR: JELAJAH MATERI  —  users/melihat-materi.plantuml
+   ===================================================================== */
+function materiItem(m) {
+  const selesai = sudahSelesai("Materi", m.idMateri);
+  return '<button class="item" data-act="open-materi" data-v="' + m.idMateri + '">' +
+    '<span class="thumb">' + esc(m.judulMateri.slice(0, 2).toUpperCase()) + "</span>" +
+    '<span class="item-body"><span class="item-title">' + esc(m.judulMateri) + "</span>" +
+    '<span class="item-meta"><span>' + esc(namaPenulis(m.idPenulis)) + "</span><span>&#9733; " + m.ratingRataRata.toFixed(1) + " (" + m.jumlahRating + ")</span>" +
+    "<span>" + fmt(m.totalDilihat) + " dilihat</span><span>" + m.tanggalUnggah + "</span></span></span>" +
+    (selesai ? '<span class="pill pill-ok"><i class="dot"></i>Selesai</span>' : "") +
+  "</button>";
+}
+function viewMateri() {
+  const q = state.search.trim().toLowerCase();
+  const hasil = state.materi.filter((m) => m.statusPublik && (!q || m.judulMateri.toLowerCase().includes(q) || m.kontenMarkdown.toLowerCase().includes(q)));
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Melihat Materi</span><h1 class="page-title">Jelajah materi</h1>' +
+    '<p class="page-sub">Pencarian menjalankan kueri teks ke tabel materi; hasilnya dirender dari Markdown saat dibuka.</p></div>' +
+    '<div class="row"><div style="position:relative; flex:1; min-width:220px">' +
+      '<input class="input" id="q-materi" placeholder="Cari judul atau isi materi…" value="' + esc(state.search) + '" data-act="search-input" style="padding-left:34px">' +
+      '<span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted)">' + icon("search", 15) + "</span>" +
+    "</div>" +
+    (state.search ? '<button class="btn btn-sm" data-act="search-clear">Bersihkan</button>' : "") +
+    '<span class="xsmall muted mono">' + hasil.length + " hasil</span></div>" +
+    (state.search ? '<div class="note"><span class="mono">SELECT * FROM materi WHERE judul_materi ILIKE $1 AND status_publik = true</span> — cabang “Gunakan Fitur Pencarian? Ya”.</div>' : "") +
+    '<div class="stack" style="gap:10px">' + (hasil.length ? hasil.map(materiItem).join("") : '<div class="empty">Tidak ada materi yang cocok dengan kata kunci itu.</div>') + "</div>" +
+  "</div>";
+}
+
+/* ---------- detail materi: rating, komentar, mulai belajar ---------- */
+function viewMateriDetail() {
+  const m = materiById(state.openMateri);
+  if (!m) return '<div class="empty">Materi tidak ditemukan.</div>';
+  const kuisTerkait = state.kuis.filter((k) => k.idMateriTerkait === m.idMateri);
+  const selesai = sudahSelesai("Materi", m.idMateri);
+  const rating = m.ratingSaya || 0;
+  return '<div class="stack" style="gap:20px">' +
+    '<button class="btn btn-ghost btn-sm" data-act="nav" data-v="materi" style="align-self:flex-start">&larr; Daftar materi</button>' +
+    '<div class="stack-sm"><span class="eyebrow">Detail Materi</span><h1 class="page-title">' + esc(m.judulMateri) + "</h1>" +
+    '<div class="item-meta"><span>' + esc(namaPenulis(m.idPenulis)) + "</span><span>Diunggah " + m.tanggalUnggah + "</span><span>" + fmt(m.totalDilihat) + " dilihat</span>" +
+    "<span>&#9733; " + m.ratingRataRata.toFixed(1) + " dari " + m.jumlahRating + " penilai</span></div></div>" +
+
+    '<div class="row">' +
+      (selesai
+        ? '<span class="pill pill-ok"><i class="dot"></i>Sudah ditandai selesai</span>'
+        : '<button class="btn btn-primary" data-act="mulai-belajar" data-v="' + m.idMateri + '">' + icon("play", 15) + " Mulai belajar</button>") +
+      kuisTerkait.map((k) => '<button class="btn" data-act="open-kuis" data-v="' + k.idKuis + '">Kerjakan ' + esc(k.judulKuis) + "</button>").join("") +
+    "</div>" +
+
+    '<div class="card pad"><div class="md">' + md(m.kontenMarkdown) + "</div></div>" +
+
+    '<div class="grid g2">' +
+      '<div class="card pad stack-sm">' +
+        '<span class="eyebrow">Beri rating</span>' +
+        '<div class="stars" role="group" aria-label="Beri rating">' +
+          [1, 2, 3, 4, 5].map((i) => '<button class="star ' + (i <= rating ? "on" : "") + '" data-act="rate" data-v="' + m.idMateri + '" data-n="' + i + '" aria-label="' + i + ' bintang">&#9733;</button>').join("") +
+        "</div>" +
+        '<p class="xsmall muted">' + (rating ? "Rating kamu tersimpan: " + rating + " bintang." : "Rating disimpan langsung ke tabel rating dan memperbarui rata-rata materi.") + "</p>" +
+      "</div>" +
+      '<div class="card pad stack-sm">' +
+        '<span class="eyebrow">Komentar (' + m.komentar.length + ")</span>" +
+        '<form class="row" data-act="komentar-submit" data-v="' + m.idMateri + '">' +
+          '<input class="input" id="k-teks" placeholder="Tulis komentar…" style="flex:1; min-width:160px">' +
+          '<button class="btn btn-sm" type="submit">Kirim</button>' +
+        "</form>" +
+        '<div>' + (m.komentar.length
+          ? m.komentar.map((c) => '<div class="comment"><b class="small">' + esc(c.oleh) + '</b><span class="small">' + esc(c.teks) + '</span><span class="xsmall muted mono">' + c.tanggal + "</span></div>").join("")
+          : '<p class="small muted">Belum ada komentar.</p>') + "</div>" +
+      "</div>" +
+    "</div>" +
+    '<p class="xsmall muted">Rating, komentar, dan “hanya membaca sekilas” adalah tiga cabang <span class="mono">fork</span> pada melihat-materi.plantuml — semuanya opsional.</p>' +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR: MODE BELAJAR  —  users/belajar.plantuml
+   ===================================================================== */
+function viewBelajar() {
+  const m = materiById(state.learnId);
+  if (!m) return '<div class="empty">Materi tidak ditemukan.</div>';
+  const selesai = sudahSelesai("Materi", m.idMateri);
+  return '<div class="stack" style="gap:20px">' +
+    '<button class="btn btn-ghost btn-sm" data-act="open-materi" data-v="' + m.idMateri + '" style="align-self:flex-start">&larr; Kembali ke detail</button>' +
+    '<div class="stack-sm"><span class="eyebrow">Mode Belajar</span><h1 class="page-title">' + esc(m.judulMateri) + "</h1>" +
+    '<p class="page-sub">Baca sampai tuntas, lalu tandai selesai untuk mencatat riwayat belajar dan menambah XP Learner.</p></div>' +
+    '<div class="card pad"><div class="md">' + md(m.kontenMarkdown) + "</div></div>" +
+    '<div class="card pad row" style="justify-content:space-between">' +
+      '<div class="stack-sm"><b class="small">' + (selesai ? "Materi ini sudah kamu selesaikan" : "Sudah selesai membaca?") + "</b>" +
+      '<span class="xsmall muted">Menandai selesai memberi <span class="mono num">' + Math.round(state.xpConfig.xpBacaMateri * state.xpConfig.multiplierLearner) + "</span> XP Learner.</span></div>" +
+      (selesai
+        ? '<span class="pill pill-ok"><i class="dot"></i>Tercatat</span>'
+        : '<button class="btn btn-primary" data-act="tandai-selesai" data-v="' + m.idMateri + '">Tandai selesai</button>') +
+    "</div>" +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR: KUIS  —  users/mengikutiKuiz.plantuml
+   ===================================================================== */
+function viewKuisList() {
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Mengikuti Kuis</span><h1 class="page-title">Kuis tersedia</h1>' +
+    '<p class="page-sub">Kuis dikerjakan satu soal per layar dengan penghitung waktu. Waktu habis, jawaban otomatis dikumpulkan.</p></div>' +
+    '<div class="stack" style="gap:10px">' + state.kuis.filter((k) => k.statusPublik).map((k) => {
+      const mt = materiById(k.idMateriTerkait);
+      const done = sudahSelesai("Kuis", k.idKuis);
+      return '<button class="item" data-act="open-kuis" data-v="' + k.idKuis + '">' +
+        '<span class="thumb" style="background:var(--learner-wash); color:var(--learner)">' + k.soal.length + "</span>" +
+        '<span class="item-body"><span class="item-title">' + esc(k.judulKuis) + "</span>" +
+        '<span class="item-meta"><span>' + esc(namaPenulis(k.idPembuat)) + "</span><span>" + k.batasWaktuMenit + " menit</span>" +
+        "<span>" + k.soal.length + " soal</span><span>" + k.poinXPDefault + " XP</span>" +
+        (mt ? "<span>Materi: " + esc(mt.judulMateri) + "</span>" : "<span>Tanpa materi terkait</span>") + "</span></span>" +
+        (done ? '<span class="pill pill-ok"><i class="dot"></i>Selesai</span>' : "") +
+      "</button>";
+    }).join("") + "</div>" +
+  "</div>";
+}
+
+function viewKuisIntro() {
+  const k = kuisById(state.openKuis);
+  if (!k) return '<div class="empty">Kuis tidak ditemukan.</div>';
+  const mt = materiById(k.idMateriTerkait);
+  return '<div class="stack" style="gap:20px">' +
+    '<button class="btn btn-ghost btn-sm" data-act="nav" data-v="kuis" style="align-self:flex-start">&larr; Daftar kuis</button>' +
+    '<div class="stack-sm"><span class="eyebrow">Aturan Kuis</span><h1 class="page-title">' + esc(k.judulKuis) + "</h1></div>" +
+    '<div class="grid g3">' +
+      stat("", "Jumlah soal", String(k.soal.length), "satu jawaban benar") +
+      stat("learner", "Batas waktu", k.batasWaktuMenit + " mnt", "timer berjalan mundur") +
+      stat("total", "Poin maksimal", String(k.poinXPDefault), "XP Learner") +
+    "</div>" +
+    '<div class="card pad"><div class="md">' + md(k.aturanMarkdown) + "</div></div>" +
+    (mt ? '<div class="note">Kuis ini merujuk materi <b>' + esc(mt.judulMateri) + '</b>. <button class="btn btn-sm btn-ghost" data-act="open-materi" data-v="' + mt.idMateri + '">Buka materi</button></div>' : "") +
+    '<button class="btn btn-primary" data-act="mulai-kuis" data-v="' + k.idKuis + '" style="align-self:flex-start">' + icon("play", 15) + " Mulai kuis</button>" +
+  "</div>";
+}
+
+function viewKuisSesi() {
+  const s = state.quiz;
+  if (!s) return '<div class="empty">Sesi kuis sudah berakhir.</div>';
+  const k = kuisById(s.idKuis);
+  const soal = k.soal[s.index];
+  const mm = String(Math.floor(s.sisa / 60)).padStart(2, "0"), ss = String(s.sisa % 60).padStart(2, "0");
+  const terakhir = s.index === k.soal.length - 1;
+  const dijawab = s.jawaban[s.index] !== null && s.jawaban[s.index] !== undefined;
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="card pad row" style="justify-content:space-between">' +
+      '<div class="stack-sm" style="gap:2px"><span class="eyebrow">' + esc(k.judulKuis) + "</span>" +
+      '<b class="small">Soal ' + (s.index + 1) + " dari " + k.soal.length + "</b></div>" +
+      '<div class="stack-sm" style="gap:2px; align-items:flex-end"><span class="eyebrow">Sisa waktu</span>' +
+      '<span class="timer ' + (s.sisa <= 20 ? "low" : "") + '">' + mm + ":" + ss + "</span></div>" +
+    "</div>" +
+    '<div class="meter"><i style="width:' + Math.round(((s.index + 1) / k.soal.length) * 100) + '%"></i></div>' +
+    '<div class="card pad stack">' +
+      '<div class="md" style="max-width:none">' + md(soal.pertanyaan) + "</div>" +
+      '<div class="stack" style="gap:9px">' + soal.opsi.map((o, i) =>
+        '<button class="opt" data-act="pilih-jawaban" data-n="' + i + '" aria-pressed="' + (s.jawaban[s.index] === i) + '">' +
+        '<span class="opt-key">' + "ABCD"[i] + '</span><span class="md" style="max-width:none">' + md(o).replace(/^<p>|<\/p>$/g, "") + "</span></button>").join("") +
+      "</div>" +
+    "</div>" +
+    '<div class="row" style="justify-content:space-between">' +
+      '<span class="xsmall muted">' + (dijawab ? "Jawaban terpilih." : "Pilih satu jawaban untuk lanjut.") + "</span>" +
+      (terakhir
+        ? '<button class="btn btn-primary" data-act="kumpulkan" ' + (dijawab ? "" : "disabled") + ">Kumpulkan jawaban</button>"
+        : '<button class="btn btn-primary" data-act="soal-berikutnya" ' + (dijawab ? "" : "disabled") + ">Soal berikutnya &rarr;</button>") +
+    "</div>" +
+  "</div>";
+}
+
+function viewKuisHasil() {
+  const r = state.quizResult, k = kuisById(r.idKuis);
+  const persen = Math.round((r.benar / k.soal.length) * 100);
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Hasil Pengerjaan</span><h1 class="page-title">' + esc(k.judulKuis) + "</h1>" +
+    '<p class="page-sub">' + (r.timeout ? "Waktu habis, jawaban dikumpulkan otomatis oleh sistem." : "Jawaban dicocokkan dengan kunci, lalu skor dan XP dihitung.") + "</p></div>" +
+    '<div class="grid g3">' +
+      stat("total", "Skor", persen + "%", r.benar + " dari " + k.soal.length + " benar") +
+      stat("learner", "XP Learner", "+" + r.xp, "sudah masuk ke total XP") +
+      stat("", "Waktu terpakai", r.terpakai, "dari " + k.batasWaktuMenit + " menit") +
+    "</div>" +
+    '<div class="stack" style="gap:10px">' + k.soal.map((so, i) => {
+      const pilih = r.jawaban[i];
+      return '<div class="card pad stack-sm">' +
+        '<div class="row" style="justify-content:space-between"><span class="eyebrow">Soal ' + (i + 1) + "</span>" +
+        '<span class="pill ' + (pilih === so.kunci ? "pill-ok" : "pill-crit") + '"><i class="dot"></i>' + (pilih === so.kunci ? "Benar" : "Salah") + "</span></div>" +
+        '<div class="md" style="max-width:none">' + md(so.pertanyaan) + "</div>" +
+        '<div class="stack" style="gap:7px">' + so.opsi.map((o, j) =>
+          '<div class="opt ' + (j === so.kunci ? "right" : j === pilih ? "wrong" : "") + '" style="cursor:default">' +
+          '<span class="opt-key">' + "ABCD"[j] + '</span><span class="md" style="max-width:none">' + md(o).replace(/^<p>|<\/p>$/g, "") + "</span></div>").join("") +
+        "</div></div>";
+    }).join("") + "</div>" +
+    '<div class="row"><button class="btn" data-act="nav" data-v="kuis">Kuis lainnya</button>' +
+    '<button class="btn btn-ghost" data-act="nav" data-v="leaderboard">Lihat leaderboard</button></div>' +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR: LEADERBOARD  —  users/melihatLeaderboard.plantuml
+   ===================================================================== */
+function viewLeaderboard() {
+  const peserta = state.akun.filter((a) => a.peran === "Users");
+  const byLearner = [...peserta].sort((a, b) => b.xpLearner - a.xpLearner);
+  const byCreator = [...peserta].sort((a, b) => b.xpCreator - a.xpCreator);
+  const byTotal = [...peserta].sort((a, b) => totalXP(b) - totalXP(a));
+  const posisiSaya = byTotal.findIndex((a) => a.idAkun === state.meId) + 1;
+
+  const kolom = (judul, list, key, kelas) =>
+    '<div class="card pad stack-sm"><div class="row" style="justify-content:space-between"><h3 style="font-size:15px">' + judul + "</h3>" +
+    '<span class="pill ' + kelas + '">' + (key === "xpLearner" ? "XP Learner" : "XP Creator") + "</span></div><div>" +
+    list.map((a, i) => '<div class="lb-row ' + (a.idAkun === state.meId ? "me" : "") + '">' +
+      '<span class="lb-rank">' + (i + 1) + "</span>" +
+      '<span class="stack-sm" style="gap:0"><b class="small">' + esc(a.namaLengkap) + "</b>" +
+      '<span class="xsmall muted mono">' + rankOf(totalXP(a)).nama + "</span></span>" +
+      '<span class="mono num small">' + fmt(a[key]) + "</span></div>").join("") + "</div></div>";
+
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Leaderboard · Musim ' + state.season + '</span><h1 class="page-title">Peringkat</h1>' +
+    '<p class="page-sub">Data diurutkan menurun berdasarkan total XP, lalu dikelompokkan jadi Learner Terbaik dan Creator Terbaik.</p></div>' +
+    '<div class="card pad row" style="justify-content:space-between">' +
+      '<div class="stack-sm" style="gap:2px"><span class="eyebrow">Posisi kamu</span>' +
+      '<b>#' + posisiSaya + " dari " + peserta.length + " pengguna · " + rankOf(totalXP(me())).nama + "</b></div>" +
+      '<span class="stat-v">' + fmt(totalXP(me())) + '<span class="xsmall muted mono"> XP</span></span>' +
+    "</div>" +
+    '<div class="grid g2">' + kolom("Learner Terbaik", byLearner, "xpLearner", "pill-learner") + kolom("Creator Terbaik", byCreator, "xpCreator", "pill-creator") + "</div>" +
+    (state.arsipMusim.length
+      ? '<div class="card pad stack-sm"><span class="eyebrow">Arsip musim sebelumnya</span>' +
+        state.arsipMusim.map((s) => '<p class="small">Musim ' + s.musim + " — Learner: <b>" + esc(s.juaraLearner) + "</b> · Creator: <b>" + esc(s.juaraCreator) + '</b> <span class="xsmall muted mono">(diarsipkan ' + s.diarsipkan + ")</span></p>").join("") + "</div>"
+      : "") +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR: STUDIO KREATOR  —  users/kelolaMateri.plantuml + users/kelolaKuiz.plantuml
+   ===================================================================== */
+function viewStudio() {
+  const materiSaya = state.materi.filter((m) => m.idPenulis === state.meId);
+  const kuisSaya = state.kuis.filter((k) => k.idPembuat === state.meId);
+  return '<div class="stack" style="gap:22px">' +
+    '<div class="stack-sm"><span class="eyebrow">Kelola Materi &amp; Kuis</span><h1 class="page-title">Studio kreator</h1>' +
+    '<p class="page-sub">Tambah, ubah, atau hapus konten milikmu. Setiap konten baru menambah XP Creator.</p></div>' +
+
+    '<div class="stack" style="gap:10px">' +
+      '<div class="section-h"><h3 style="font-size:15px">Materi saya (' + materiSaya.length + ")</h3>" +
+      '<button class="btn btn-primary btn-sm" data-act="materi-baru">+ Materi baru</button></div>' +
+      (materiSaya.length ? materiSaya.map((m) =>
+        '<div class="item"><span class="thumb">' + esc(m.judulMateri.slice(0, 2).toUpperCase()) + "</span>" +
+        '<span class="item-body"><span class="item-title">' + esc(m.judulMateri) + "</span>" +
+        '<span class="item-meta"><span>' + m.tanggalUnggah + "</span><span>" + fmt(m.totalDilihat) + " dilihat</span><span>&#9733; " + m.ratingRataRata.toFixed(1) + "</span>" +
+        "<span>" + (m.statusPublik ? "Publik" : "Disembunyikan") + "</span></span></span>" +
+        '<span class="row" style="gap:6px"><button class="btn btn-sm" data-act="materi-edit" data-v="' + m.idMateri + '">Ubah</button>' +
+        '<button class="btn btn-sm btn-danger" data-act="materi-hapus" data-v="' + m.idMateri + '">Hapus</button></span></div>').join("")
+        : '<div class="empty">Belum ada materi. Mulai dari “Materi baru”.</div>') +
+    "</div>" +
+
+    '<div class="stack" style="gap:10px">' +
+      '<div class="section-h"><h3 style="font-size:15px">Kuis saya (' + kuisSaya.length + ")</h3>" +
+      '<button class="btn btn-primary btn-sm" data-act="kuis-baru">+ Kuis baru</button></div>' +
+      (kuisSaya.length ? kuisSaya.map((k) =>
+        '<div class="item"><span class="thumb" style="background:var(--creator-wash); color:var(--creator)">' + k.soal.length + "</span>" +
+        '<span class="item-body"><span class="item-title">' + esc(k.judulKuis) + "</span>" +
+        '<span class="item-meta"><span>' + k.soal.length + " soal</span><span>" + k.batasWaktuMenit + " menit</span><span>" + k.poinXPDefault + " XP</span></span></span>" +
+        '<span class="row" style="gap:6px"><button class="btn btn-sm" data-act="kuis-edit" data-v="' + k.idKuis + '">Ubah</button>' +
+        '<button class="btn btn-sm btn-danger" data-act="kuis-hapus" data-v="' + k.idKuis + '">Hapus</button></span></div>').join("")
+        : '<div class="empty">Belum ada kuis. Kuis boleh berdiri sendiri atau merujuk salah satu materi.</div>') +
+    "</div>" +
+  "</div>";
+}
+
+/* ---------- editor materi ---------- */
+function viewStudioMateri() {
+  const e = state.editMateri;
+  return '<div class="stack" style="gap:18px">' +
+    '<button class="btn btn-ghost btn-sm" data-act="nav" data-v="studio" style="align-self:flex-start">&larr; Studio</button>' +
+    '<div class="stack-sm"><span class="eyebrow">Kelola Materi</span><h1 class="page-title">' + (e.baru ? "Materi baru" : "Ubah materi") + "</h1>" +
+    '<p class="page-sub">Konten wajib Markdown. Pratinjau di kanan memakai renderer yang sama dengan halaman detail.</p></div>' +
+    '<div class="field"><label for="em-judul">Judul materi</label><input class="input" id="em-judul" value="' + esc(e.judulMateri) + '"></div>' +
+    '<div class="grid g2" style="align-items:start">' +
+      '<div class="stack-sm"><div class="row" style="justify-content:space-between"><label class="small" style="font-weight:600" for="em-konten">Konten (Markdown)</label>' +
+      '<button class="btn btn-sm btn-ghost" data-act="sisip-berkas">Sisipkan gambar</button></div>' +
+      '<textarea class="input" id="em-konten" data-act="editor-live">' + esc(e.kontenMarkdown) + "</textarea>" +
+      (e.lampiran.length ? '<div class="row" style="gap:6px">' + e.lampiran.map((f) => '<span class="pill pill-neutral">' + esc(f) + "</span>").join("") + "</div>" : "") +
+      '<p class="xsmall muted">Lampiran diunggah ke AWS S3 secara paralel dengan validasi struktur Markdown.</p></div>' +
+      '<div class="stack-sm"><span class="eyebrow">Pratinjau</span>' +
+      '<div class="card pad" style="min-height:230px"><div class="md" id="em-preview">' + md(e.kontenMarkdown) + "</div></div></div>" +
+    "</div>" +
+    '<div class="row" style="justify-content:space-between">' +
+      '<span class="xsmall muted">Menyimpan memberi <span class="mono num">' + Math.round(state.xpConfig.xpUnggahMateri * state.xpConfig.multiplierCreator) + "</span> XP Creator" + (e.baru ? "." : " hanya untuk materi baru.") + "</span>" +
+      '<span class="row"><button class="btn" data-act="nav" data-v="studio">Batal</button>' +
+      '<button class="btn btn-primary" data-act="materi-simpan">Simpan materi</button></span>' +
+    "</div>" +
+  "</div>";
+}
+
+/* ---------- editor kuis ---------- */
+function viewStudioKuis() {
+  const e = state.editKuis;
+  return '<div class="stack" style="gap:18px">' +
+    '<button class="btn btn-ghost btn-sm" data-act="nav" data-v="studio" style="align-self:flex-start">&larr; Studio</button>' +
+    '<div class="stack-sm"><span class="eyebrow">Kelola Kuis</span><h1 class="page-title">' + (e.baru ? "Kuis baru" : "Ubah kuis") + "</h1>" +
+    '<p class="page-sub">Susun soal dan pilihan jawaban, atur batas waktu serta bobot poin.</p></div>' +
+    '<div class="grid g2">' +
+      '<div class="field"><label for="ek-judul">Judul kuis</label><input class="input" id="ek-judul" value="' + esc(e.judulKuis) + '"></div>' +
+      '<div class="field"><label for="ek-materi">Materi terkait</label><select class="input" id="ek-materi">' +
+        '<option value="0">— Tanpa materi terkait —</option>' +
+        state.materi.map((m) => '<option value="' + m.idMateri + '" ' + (e.idMateriTerkait === m.idMateri ? "selected" : "") + ">" + esc(m.judulMateri) + "</option>").join("") +
+      "</select></div>" +
+      '<div class="field"><label for="ek-waktu">Batas waktu (menit)</label><input class="input num" id="ek-waktu" type="number" min="1" max="60" value="' + e.batasWaktuMenit + '"></div>' +
+      '<div class="field"><label for="ek-poin">Poin XP default</label><input class="input num" id="ek-poin" type="number" min="5" max="500" value="' + e.poinXPDefault + '"></div>' +
+    "</div>" +
+    '<div class="field"><label for="ek-aturan">Aturan kuis (Markdown)</label><textarea class="input" id="ek-aturan" style="min-height:100px">' + esc(e.aturanMarkdown) + "</textarea></div>" +
+    '<div class="stack" style="gap:10px">' +
+      '<div class="section-h"><h3 style="font-size:15px">Soal (' + e.soal.length + ")</h3>" +
+      '<button class="btn btn-sm" data-act="soal-tambah">+ Tambah soal</button></div>' +
+      (e.soal.length ? e.soal.map((s, i) =>
+        '<div class="card pad stack-sm"><div class="row" style="justify-content:space-between"><span class="eyebrow">Soal ' + (i + 1) + "</span>" +
+        '<button class="btn btn-sm btn-danger btn-ghost" data-act="soal-hapus" data-n="' + i + '">Hapus soal</button></div>' +
+        '<input class="input" data-act="soal-teks" data-n="' + i + '" value="' + esc(s.pertanyaan) + '" placeholder="Tulis pertanyaan…">' +
+        '<div class="grid g2" style="gap:8px">' + s.opsi.map((o, j) =>
+          '<div class="row" style="gap:7px; flex-wrap:nowrap">' +
+          '<button class="opt-key" data-act="soal-kunci" data-n="' + i + '" data-j="' + j + '" title="Tandai sebagai kunci" style="cursor:pointer; ' +
+          (s.kunci === j ? "background:var(--ok); color:#fff; border-color:var(--ok)" : "") + '">' + "ABCD"[j] + "</button>" +
+          '<input class="input" data-act="opsi-teks" data-n="' + i + '" data-j="' + j + '" value="' + esc(o) + '" placeholder="Pilihan ' + "ABCD"[j] + '"></div>').join("") +
+        "</div>" +
+        '<p class="xsmall muted">Kunci jawaban saat ini: <b>' + "ABCD"[s.kunci] + "</b> — klik huruf untuk mengubah.</p></div>").join("")
+        : '<div class="empty">Belum ada soal. Tambahkan minimal satu soal sebelum menyimpan.</div>') +
+    "</div>" +
+    '<div class="row" style="justify-content:space-between">' +
+      '<span class="xsmall muted">Menyimpan memberi <span class="mono num">' + Math.round(state.xpConfig.xpBuatKuis * state.xpConfig.multiplierCreator) + "</span> XP Creator" + (e.baru ? "." : " hanya untuk kuis baru.") + "</span>" +
+      '<span class="row"><button class="btn" data-act="nav" data-v="studio">Batal</button>' +
+      '<button class="btn btn-primary" data-act="kuis-simpan">Simpan kuis</button></span>' +
+    "</div>" +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR ADMIN: KELOLA USERS  —  admin/mengelolaUsers.plantuml
+   ===================================================================== */
+function viewAdminUsers() {
+  const q = state.adminSearch.trim().toLowerCase();
+  const list = state.akun.filter((a) => !q || a.namaLengkap.toLowerCase().includes(q) || a.email.toLowerCase().includes(q));
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Mengelola Users</span><h1 class="page-title">Kelola pengguna</h1>' +
+    '<p class="page-sub">Ubah peran, suspend, atau hapus akun. Setiap tindakan menulis langsung ke tabel users.</p></div>' +
+    '<div class="row"><input class="input" id="q-admin" data-act="admin-search" placeholder="Cari nama atau email…" value="' + esc(state.adminSearch) + '" style="max-width:320px">' +
+    '<span class="xsmall muted mono">' + list.length + " akun</span></div>" +
+    '<div class="tablewrap"><table><thead><tr>' +
+      "<th>Nama</th><th>Email</th><th>Peran</th><th class=\"num\">XP Learner</th><th class=\"num\">XP Creator</th><th>Status</th><th>Tindakan</th>" +
+    "</tr></thead><tbody>" +
+    list.map((a) => "<tr><td><b>" + esc(a.namaLengkap) + '</b><div class="xsmall muted mono">' + a.idAkun + "</div></td>" +
+      '<td class="mono xsmall">' + esc(a.email) + "</td>" +
+      '<td><span class="pill ' + (a.peran === "Admin" ? "pill-accent" : "pill-neutral") + '">' + a.peran + "</span></td>" +
+      '<td class="num">' + fmt(a.xpLearner) + '</td><td class="num">' + fmt(a.xpCreator) + "</td>" +
+      '<td><span class="pill ' + (a.statusAktif ? "pill-ok" : "pill-warn") + '"><i class="dot"></i>' + (a.statusAktif ? "Aktif" : "Suspended") + "</span></td>" +
+      '<td><span class="row" style="gap:5px; flex-wrap:nowrap">' +
+        '<button class="btn btn-sm" data-act="user-peran" data-v="' + a.idAkun + '">Peran</button>' +
+        '<button class="btn btn-sm" data-act="user-suspend" data-v="' + a.idAkun + '">' + (a.statusAktif ? "Suspend" : "Aktifkan") + "</button>" +
+        '<button class="btn btn-sm btn-danger" data-act="user-hapus" data-v="' + a.idAkun + '">Hapus</button>' +
+      "</span></td></tr>").join("") +
+    "</tbody></table></div>" +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR ADMIN: MODERASI KONTEN  —  admin/mengelolaMateri.plantuml
+   (mencakup use case "Mengelola Materi" dan "Mengelola Kuis")
+   ===================================================================== */
+function viewAdminKonten() {
+  const tabMateri = state.adminTab === "materi";
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Mengelola Materi &amp; Kuis</span><h1 class="page-title">Moderasi konten</h1>' +
+    '<p class="page-sub">Sembunyikan konten dari publik, atau hapus paksa beserta asetnya di S3. Creator menerima notifikasi otomatis.</p></div>' +
+    '<div class="tabs" role="tablist">' +
+      '<button class="tab" role="tab" aria-selected="' + tabMateri + '" data-act="admin-tab" data-v="materi">Materi (' + state.materi.length + ")</button>" +
+      '<button class="tab" role="tab" aria-selected="' + !tabMateri + '" data-act="admin-tab" data-v="kuis">Kuis (' + state.kuis.length + ")</button>" +
+    "</div>" +
+    (tabMateri
+      ? '<div class="tablewrap"><table><thead><tr><th>Judul</th><th>Creator</th><th class="num">Dilihat</th><th class="num">Rating</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>' +
+        state.materi.map((m) => "<tr><td><b>" + esc(m.judulMateri) + '</b><div class="xsmall muted mono">idMateri ' + m.idMateri + "</div></td>" +
+          "<td>" + esc(namaPenulis(m.idPenulis)) + '</td><td class="num">' + fmt(m.totalDilihat) + '</td><td class="num">' + m.ratingRataRata.toFixed(1) + "</td>" +
+          '<td><span class="pill ' + (m.statusPublik ? "pill-ok" : "pill-warn") + '"><i class="dot"></i>' + (m.statusPublik ? "Publik" : "Disembunyikan") + "</span></td>" +
+          '<td><span class="row" style="gap:5px; flex-wrap:nowrap">' +
+            '<button class="btn btn-sm" data-act="mod-sembunyi" data-v="' + m.idMateri + '">' + (m.statusPublik ? "Sembunyikan" : "Tampilkan") + "</button>" +
+            '<button class="btn btn-sm btn-danger" data-act="mod-hapus" data-v="' + m.idMateri + '">Hapus paksa</button></span></td></tr>').join("") +
+        "</tbody></table></div>"
+      : '<div class="tablewrap"><table><thead><tr><th>Judul</th><th>Pembuat</th><th class="num">Soal</th><th class="num">Poin XP</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>' +
+        state.kuis.map((k) => "<tr><td><b>" + esc(k.judulKuis) + '</b><div class="xsmall muted mono">idKuis ' + k.idKuis + " · materi " + (k.idMateriTerkait || "—") + "</div></td>" +
+          "<td>" + esc(namaPenulis(k.idPembuat)) + '</td><td class="num">' + k.soal.length + '</td><td class="num">' + k.poinXPDefault + "</td>" +
+          '<td><span class="pill ' + (k.statusPublik ? "pill-ok" : "pill-warn") + '"><i class="dot"></i>' + (k.statusPublik ? "Publik" : "Disembunyikan") + "</span></td>" +
+          '<td><span class="row" style="gap:5px; flex-wrap:nowrap">' +
+            '<button class="btn btn-sm" data-act="mod-kuis-sembunyi" data-v="' + k.idKuis + '">' + (k.statusPublik ? "Sembunyikan" : "Tampilkan") + "</button>" +
+            '<button class="btn btn-sm btn-danger" data-act="mod-kuis-hapus" data-v="' + k.idKuis + '">Hapus paksa</button></span></td></tr>').join("") +
+        "</tbody></table></div>") +
+    '<div class="note sys">Hapus paksa menjalankan <span class="mono">DELETE</span> lalu menghapus aset terkait di AWS S3; sembunyikan hanya mengubah <span class="mono">status_publik = false</span>.</div>' +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR ADMIN: XP & RANKED  —  admin/manajemenRankXP.plantuml
+   ===================================================================== */
+function viewAdminXP() {
+  const c = state.xpConfig;
+  const slider = (id, label, val, min, max, step) =>
+    '<div class="field"><div class="row" style="justify-content:space-between"><label for="' + id + '">' + label + "</label>" +
+    '<span class="mono num small" id="' + id + '-out">×' + val.toFixed(2) + "</span></div>" +
+    '<input type="range" id="' + id + '" data-act="xp-slider" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '" style="width:100%; accent-color:var(--accent)"></div>';
+
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Manajemen XP &amp; Ranked</span><h1 class="page-title">Gamifikasi</h1>' +
+    '<p class="page-sub">Ubah bobot XP untuk musim berjalan, atau tutup musim dan mulai peringkat baru.</p></div>' +
+
+    '<div class="grid g2" style="align-items:start">' +
+      '<div class="card pad stack"><h3 style="font-size:15px">Ubah bobot XP</h3>' +
+        slider("mx-learner", "Multiplier XP Learner", c.multiplierLearner, 0.5, 3, 0.05) +
+        slider("mx-creator", "Multiplier XP Creator", c.multiplierCreator, 0.5, 3, 0.05) +
+        '<div class="grid g2" style="gap:12px">' +
+          '<div class="field"><label for="xp-baca">XP baca materi</label><input class="input num" id="xp-baca" type="number" value="' + c.xpBacaMateri + '"></div>' +
+          '<div class="field"><label for="xp-kuis">XP default kuis baru</label><input class="input num" id="xp-kuis" type="number" value="' + c.xpSelesaiKuis + '"></div>' +
+          '<div class="field"><label for="xp-unggah">XP unggah materi</label><input class="input num" id="xp-unggah" type="number" value="' + c.xpUnggahMateri + '"></div>' +
+          '<div class="field"><label for="xp-buat">XP buat kuis</label><input class="input num" id="xp-buat" type="number" value="' + c.xpBuatKuis + '"></div>' +
+        "</div>" +
+        '<button class="btn btn-primary" data-act="xp-simpan" style="align-self:flex-start">Simpan konfigurasi</button>' +
+        '<p class="xsmall muted">Multiplier dipakai saat kalkulasi total XP dan setiap perolehan XP berikutnya — perubahannya langsung terlihat di leaderboard. “XP default kuis baru” mengisi bobot poin awal saat kreator membuat kuis; kuis yang sudah ada tetap memakai poinnya sendiri.</p>' +
+      "</div>" +
+
+      '<div class="stack">' +
+        '<div class="card pad stack-sm"><h3 style="font-size:15px">Musim berjalan</h3>' +
+          '<div class="row" style="justify-content:space-between"><span class="small muted">Musim</span><b class="mono num">' + state.season + "</b></div>" +
+          '<div class="row" style="justify-content:space-between"><span class="small muted">Peserta</span><b class="mono num">' + state.akun.filter((a) => a.peran === "Users").length + "</b></div>" +
+          '<div class="row" style="justify-content:space-between"><span class="small muted">Total XP beredar</span><b class="mono num">' +
+            fmt(state.akun.filter((a) => a.peran === "Users").reduce((s, a) => s + totalXP(a), 0)) + "</b></div>" +
+        "</div>" +
+        '<div class="card pad stack-sm" style="border-color:color-mix(in srgb, var(--crit) 32%, var(--line))">' +
+          '<h3 style="font-size:15px">Reset peringkat</h3>' +
+          '<p class="small muted">Pemenang musim ini diarsipkan, lalu <span class="mono">total_xp</span>, <span class="mono">xp_learner</span>, dan <span class="mono">xp_creator</span> di-set 0 untuk semua pengguna.</p>' +
+          '<button class="btn btn-danger" data-act="reset-musim" style="align-self:flex-start">Reset peringkat (musim baru)</button>' +
+        "</div>" +
+        (state.arsipMusim.length ? '<div class="card pad stack-sm"><span class="eyebrow">Arsip</span>' +
+          state.arsipMusim.map((s) => '<p class="small">Musim ' + s.musim + " · Learner <b>" + esc(s.juaraLearner) + "</b> · Creator <b>" + esc(s.juaraCreator) + "</b></p>").join("") + "</div>" : "") +
+      "</div>" +
+    "</div>" +
+  "</div>";
+}
+
+/* =====================================================================
+   LAYAR: PETA USE CASE — cakupan terhadap docs/*.plantuml
+   ===================================================================== */
+const PETA = [
+  ["Login", "login.plantuml", "Masuk", "login", "Users + Admin + Google Auth"],
+  ["Register", "register.plantuml", "Daftar", "register", "Users + Google Auth"],
+  ["Melihat Materi", "users/melihat-materi.plantuml", "Jelajah Materi → Detail", "materi", "Users"],
+  ["Mencari Materi &lt;&lt;extend&gt;&gt;", "users/melihat-materi.plantuml", "Kolom pencarian di Jelajah Materi", "materi", "Users"],
+  ["Memberi Rating &lt;&lt;extend&gt;&gt;", "users/melihat-materi.plantuml", "Panel bintang di Detail Materi", "materi", "Users"],
+  ["Memberi Komentar &lt;&lt;extend&gt;&gt;", "users/melihat-materi.plantuml", "Panel komentar di Detail Materi", "materi", "Users"],
+  ["Belajar Materi", "users/belajar.plantuml", "Mode Belajar → Tandai selesai", "materi", "Users (Learner)"],
+  ["Mengikuti Kuis", "users/mengikutiKuiz.plantuml", "Kuis → Sesi → Hasil", "kuis", "Users (Learner)"],
+  ["Kelola Materi (Upload/Edit/Hapus)", "users/kelolaMateri.plantuml", "Studio → Editor materi", "studio", "Users (Creator)"],
+  ["Kelola Kuis (Buat/Edit/Hapus)", "users/kelolaKuiz.plantuml", "Studio → Editor kuis", "studio", "Users (Creator)"],
+  ["Melihat Leaderboard (Ranked)", "users/melihatLeaderboard.plantuml", "Leaderboard", "leaderboard", "Users"],
+  ["Mengelola Users", "admin/mengelolaUsers.plantuml", "Admin → Kelola Users", "admin-users", "Admin"],
+  ["Mengelola Materi", "admin/mengelolaMateri.plantuml", "Admin → Moderasi Konten, tab Materi", "admin-konten", "Admin"],
+  ["Mengelola Kuis", "admin/mengelolaMateri.plantuml", "Admin → Moderasi Konten, tab Kuis", "admin-konten", "Admin"],
+  ["Manajemen XP &amp; Ranked", "admin/manajemenRankXP.plantuml", "Admin → XP &amp; Ranked", "admin-xp", "Admin"],
+];
+function viewPeta() {
+  return '<div class="stack" style="gap:20px">' +
+    '<div class="stack-sm"><span class="eyebrow">Dokumentasi</span><h1 class="page-title">Peta use case &amp; cakupan diagram</h1>' +
+    '<p class="page-sub">15 use case pada <span class="mono">usd.plantuml</span> dipetakan ke layar prototipe ini, beserta activity diagram sumbernya.</p></div>' +
+    '<div class="tablewrap"><table><thead><tr><th>Use case</th><th>Berkas diagram</th><th>Layar prototipe</th><th>Aktor</th><th></th></tr></thead><tbody>' +
+    PETA.map((r) => "<tr><td><b>" + r[0] + '</b></td><td class="uc-file">' + r[1] + "</td><td>" + r[2] + '</td><td class="xsmall muted">' + r[4] + "</td>" +
+      '<td><button class="btn btn-sm" data-act="nav" data-v="' + r[3] + '">Buka</button></td></tr>').join("") +
+    "</tbody></table></div>" +
+    '<div class="note sys"><b>Catatan cakupan.</b> Use case <b>Mengelola Kuis</b> tidak punya berkas activity diagram tersendiri; alurnya mengikuti <span class="mono">admin/mengelolaMateri.plantuml</span> yang langkah pertamanya berbunyi “Mengakses Menu Kelola Materi / Kuis”. Di prototipe ini keduanya jadi satu layar moderasi dengan dua tab. Kalau tim ingin alur terpisah, diagramnya perlu ditambahkan.</div>' +
+    '<div class="grid g2">' +
+      '<div class="card pad stack-sm"><span class="eyebrow">Kelas yang diwakili</span>' +
+      '<p class="small muted">Data contoh memakai nama atribut dari <span class="mono">classDiagram.plantuml</span>: <span class="mono">xpLearner</span>, <span class="mono">xpCreator</span>, <span class="mono">ratingRataRata</span>, <span class="mono">idMateriTerkait</span>, <span class="mono">batasWaktuMenit</span>, <span class="mono">poinXPDefault</span>, <span class="mono">RiwayatBelajar.tipeKonten</span>.</p></div>' +
+      '<div class="card pad stack-sm"><span class="eyebrow">Batas prototipe</span>' +
+      '<p class="small muted">Semua data disimpan di memori browser dan hilang saat halaman dimuat ulang. Google Auth, unggahan S3, dan kueri PostgreSQL disimulasikan sebagai langkah alur, bukan integrasi nyata.</p></div>' +
+    "</div>" +
+  "</div>";
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function render() {
+  const root = $("#root");
+  if (state.route === "login") { root.innerHTML = viewLogin(); renderModal(); return; }
+  if (state.route === "register") { root.innerHTML = viewRegister(); renderModal(); return; }
+  if (state.route === "peta" && !state.role) {
+    root.innerHTML = '<div class="canvas" style="margin:0 auto">' + viewPeta() +
+      '<div style="margin-top:20px"><button class="btn" data-act="nav" data-v="login">&larr; Kembali ke login</button></div></div>';
+    renderModal(); return;
+  }
+
+  const nav = state.role === "admin" ? NAV_ADMIN : NAV_USER;
+  const a = me(), t = totalXP(a);
+  const crumb = CRUMB[state.route] || ["", ""];
+
+  const body = {
+    beranda: viewBeranda, materi: viewMateri, "materi-detail": viewMateriDetail, belajar: viewBelajar,
+    kuis: viewKuisList, "kuis-intro": viewKuisIntro, "kuis-main": viewKuisSesi, "kuis-hasil": viewKuisHasil,
+    leaderboard: viewLeaderboard, studio: viewStudio, "studio-materi": viewStudioMateri, "studio-kuis": viewStudioKuis,
+    "admin-users": viewAdminUsers, "admin-konten": viewAdminKonten, "admin-xp": viewAdminXP, peta: viewPeta,
+  }[state.route] || viewBeranda;
+
+  root.innerHTML =
+    '<div class="shell"><aside class="rail">' +
+      '<div class="brand"><span class="brand-mark">RB</span><span><span class="brand-name">Ruang Belajar</span><br><span class="brand-sub">LMS Gamifikasi</span></span></div>' +
+      '<nav class="nav">' +
+        '<span class="nav-label">' + (state.role === "admin" ? "Admin" : "Users") + "</span>" +
+        nav.map((n) => '<button class="nav-item" data-act="nav" data-v="' + n.id + '" aria-current="' + (state.route.startsWith(n.id) ? "true" : "false") + '">' + icon(n.icon) + n.label + "</button>").join("") +
+        '<span class="nav-label">Dokumentasi</span>' +
+        '<button class="nav-item" data-act="nav" data-v="peta" aria-current="' + (state.route === "peta") + '">' + icon("map") + "Peta use case</button>" +
+      "</nav>" +
+      '<div class="rail-foot">' +
+        (state.role === "user"
+          ? '<div class="stack-sm" style="gap:6px"><div class="row" style="justify-content:space-between"><span class="pill pill-learner num">L ' + fmt(a.xpLearner) + '</span><span class="pill pill-creator num">C ' + fmt(a.xpCreator) + "</span></div>" +
+            '<div class="meter"><i style="width:' + (nextRank(t) ? Math.min(100, Math.round(((t - rankOf(t).min) / (nextRank(t).min - rankOf(t).min)) * 100)) : 100) + '%"></i></div>' +
+            '<span class="xsmall muted mono">' + fmt(t) + " XP · " + rankOf(t).nama + "</span></div>"
+          : '<span class="xsmall muted mono">' + esc(a.kodePegawai || "") + " · akses " + esc(a.tingkatAkses || "") + "</span>") +
+        '<button class="nav-item" data-act="logout">' + icon("logout") + "Keluar</button>" +
+      "</div>" +
+    "</aside>" +
+    '<div class="main"><header class="topbar">' +
+      '<span class="crumb">' + crumb[0] + " · " + crumb[1] + "</span>" +
+      '<span class="spacer"></span>' +
+      '<div class="role-switch" role="group" aria-label="Ganti peran">' +
+        '<button data-act="role" data-v="user" aria-pressed="' + (state.role === "user") + '">Users</button>' +
+        '<button data-act="role" data-v="admin" aria-pressed="' + (state.role === "admin") + '">Admin</button>' +
+      "</div>" +
+      '<button class="btn btn-sm btn-ghost" data-act="theme" title="Ganti tema">Tema</button>' +
+    "</header>" +
+    '<div class="canvas">' + body() + "</div></div></div>";
+
+  renderModal();
+}
+
+function renderModal() {
+  const slot = $("#modal-slot");
+  if (!state.modal) { slot.innerHTML = ""; return; }
+  const m = state.modal;
+  slot.innerHTML = '<div class="scrim" data-act="modal-close"><div class="modal" role="dialog" aria-modal="true">' +
+    "<h3>" + esc(m.judul) + '</h3><p class="small muted">' + m.pesan + "</p>" +
+    '<div class="row" style="justify-content:flex-end">' +
+      '<button class="btn" data-act="modal-close">Batal</button>' +
+      '<button class="btn ' + (m.bahaya ? "btn-danger" : "btn-primary") + '" data-act="modal-ok">' + esc(m.ok) + "</button>" +
+    "</div></div></div>";
+}
+function konfirmasi(judul, pesan, ok, aksi, bahaya) {
+  state.modal = { judul, pesan, ok, aksi, bahaya: !!bahaya };
+  renderModal();
+}
+
+/* =====================================================================
+   TIMER KUIS
+   ===================================================================== */
+let quizTimer = null;
+function mulaiTimer() {
+  clearInterval(quizTimer);
+  quizTimer = setInterval(() => {
+    if (!state.quiz) { clearInterval(quizTimer); return; }
+    state.quiz.sisa--;
+    state.quiz.terpakai++;
+    if (state.quiz.sisa <= 0) { clearInterval(quizTimer); selesaikanKuis(true); return; }
+    if (state.route === "kuis-main") {
+      const el = $(".timer");
+      if (el) {
+        const s = state.quiz.sisa;
+        el.textContent = String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+        el.classList.toggle("low", s <= 20);
+      }
+    }
+  }, 1000);
+}
+function selesaikanKuis(timeout) {
+  clearInterval(quizTimer);
+  const s = state.quiz, k = kuisById(s.idKuis);
+  const benar = k.soal.reduce((n, so, i) => n + (s.jawaban[i] === so.kunci ? 1 : 0), 0);
+  const xpDasar = Math.round((k.poinXPDefault * benar) / k.soal.length);
+  const xp = catatRiwayat("Kuis", k.idKuis, k.judulKuis, xpDasar, "learner");
+  const t = s.terpakai;
+  state.quizResult = {
+    idKuis: k.idKuis, benar, jawaban: s.jawaban.slice(), xp, timeout: !!timeout,
+    terpakai: String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"),
+  };
+  state.quiz = null;
+  if (timeout) toast("Waktu habis", "Jawaban dikumpulkan otomatis oleh sistem.", "sys");
+  go("kuis-hasil");
+}
+
+/* =====================================================================
+   AKSI
+   ===================================================================== */
+document.addEventListener("click", (ev) => {
+  const el = ev.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.dataset.act, v = el.dataset.v, n = el.dataset.n, j = el.dataset.j;
+  if (act === "modal-close" && el.classList.contains("scrim") && ev.target.closest(".modal")) return;
+
+  switch (act) {
+    /* --- auth --- */
+    case "auth-tab": state.authTab = v; state.authError = ""; render(); break;
+    case "reg-tab": state.regTab = v; state.authError = ""; render(); break;
+    case "login-google": {
+      state.role = v; state.meId = v === "admin" ? "a-01" : "u-01"; state.authError = ""; state.authOk = "";
+      toast("Token terverifikasi", "Google Auth berhasil, sesi JWT dibuat.", "sys");
+      go(v === "admin" ? "admin-users" : "beranda");
+      break;
+    }
+    case "register-google": {
+      state.authError = ""; state.authOk = "Akun via Google berhasil dibuat. Silakan masuk.";
+      toast("Registrasi berhasil", "Data profil diambil dari Google Auth.", "sys");
+      go("login");
+      break;
+    }
+    case "nav": {
+      if (state.quiz) { clearInterval(quizTimer); state.quiz = null; }
+      if (v === "peta" && !state.role) { go("peta"); break; }
+      if (["login", "register"].includes(v)) { state.authError = ""; go(v); break; }
+      if (NAV_ADMIN.some((x) => x.id === v)) state.role = "admin";
+      if (NAV_USER.some((x) => x.id === v)) state.role = "user";
+      if (state.role === "admin" && NAV_USER.some((x) => x.id === v)) state.meId = "u-01";
+      go(v);
+      break;
+    }
+    case "role": {
+      if (state.quiz) { clearInterval(quizTimer); state.quiz = null; }
+      state.role = v; state.meId = v === "admin" ? "a-01" : "u-01";
+      go(v === "admin" ? "admin-users" : "beranda");
+      break;
+    }
+    case "logout": {
+      clearInterval(quizTimer); state.quiz = null; state.role = null; state.meId = "u-01";
+      state.authOk = "Sesi diakhiri."; state.authError = "";
+      go("login");
+      break;
+    }
+    case "theme": {
+      const cur = document.documentElement.getAttribute("data-theme");
+      const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const next = cur ? (cur === "dark" ? "light" : "dark") : (sysDark ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", next);
+      break;
+    }
+
+    /* --- materi --- */
+    case "open-materi": {
+      const m = materiById(Number(v));
+      if (m) m.totalDilihat++;
+      go("materi-detail", { openMateri: Number(v) });
+      break;
+    }
+    case "search-clear": go("materi", { search: "" }); break;
+    case "mulai-belajar": go("belajar", { learnId: Number(v) }); break;
+    case "tandai-selesai": {
+      const m = materiById(Number(v));
+      catatRiwayat("Materi", m.idMateri, m.judulMateri, state.xpConfig.xpBacaMateri, "learner");
+      render();
+      break;
+    }
+    case "rate": {
+      const m = materiById(Number(v)), nilai = Number(n);
+      const sebelum = m.ratingSaya || 0;
+      if (!sebelum) { m.jumlahRating++; }
+      const totalNilai = m.ratingRataRata * (m.jumlahRating - (sebelum ? 0 : 1)) - sebelum + nilai;
+      m.ratingRataRata = Math.max(1, Math.min(5, totalNilai / m.jumlahRating));
+      m.ratingSaya = nilai;
+      toast("Rating tersimpan", nilai + " bintang untuk " + m.judulMateri, "sys");
+      render();
+      break;
+    }
+
+    /* --- kuis --- */
+    case "open-kuis": go("kuis-intro", { openKuis: Number(v) }); break;
+    case "mulai-kuis": {
+      const k = kuisById(Number(v));
+      state.quiz = { idKuis: k.idKuis, index: 0, jawaban: k.soal.map(() => null), sisa: k.batasWaktuMenit * 60, terpakai: 0 };
+      mulaiTimer();
+      go("kuis-main");
+      break;
+    }
+    case "pilih-jawaban": state.quiz.jawaban[state.quiz.index] = Number(n); render(); break;
+    case "soal-berikutnya": state.quiz.index++; render(); break;
+    case "kumpulkan": selesaikanKuis(false); break;
+
+    /* --- studio: materi --- */
+    case "materi-baru":
+      go("studio-materi", { editMateri: { baru: true, idMateri: null, judulMateri: "", kontenMarkdown: "## Bagian pertama\n\nTulis materi di sini menggunakan Markdown.\n\n- Poin pertama\n- Poin kedua", lampiran: [] } });
+      break;
+    case "materi-edit": {
+      const m = materiById(Number(v));
+      go("studio-materi", { editMateri: { baru: false, idMateri: m.idMateri, judulMateri: m.judulMateri, kontenMarkdown: m.kontenMarkdown, lampiran: [] } });
+      break;
+    }
+    case "sisip-berkas": {
+      const e = state.editMateri;
+      e.judulMateri = $("#em-judul").value; e.kontenMarkdown = $("#em-konten").value;
+      const nama = "diagram-" + (e.lampiran.length + 1) + ".png";
+      e.lampiran.push(nama);
+      e.kontenMarkdown += "\n\n![" + nama + "](s3://ruangbelajar/materi/" + nama + ")";
+      toast("Unggah ke S3", nama + " terunggah dan disisipkan ke konten.", "sys");
+      render();
+      break;
+    }
+    case "materi-simpan": {
+      const e = state.editMateri;
+      const judul = $("#em-judul").value.trim(), konten = $("#em-konten").value;
+      if (!judul) { toast("Judul belum diisi", "Materi butuh judul sebelum bisa disimpan.", "sys"); break; }
+      if (konten.trim().length < 20) { toast("Konten terlalu pendek", "Validasi struktur Markdown gagal, isi minimal satu bagian.", "sys"); break; }
+      if (e.baru) {
+        const id = Math.max(0, ...state.materi.map((m) => m.idMateri)) + 1;
+        state.materi.unshift({
+          idMateri: id, judulMateri: judul, kontenMarkdown: konten, idPenulis: state.meId,
+          tanggalUnggah: "2026-08-02", totalDilihat: 0, ratingRataRata: 0, jumlahRating: 0, statusPublik: true, komentar: [],
+        });
+        catatRiwayat("Materi", id, judul, state.xpConfig.xpUnggahMateri, "creator");
+      } else {
+        const m = materiById(e.idMateri);
+        m.judulMateri = judul; m.kontenMarkdown = konten;
+        toast("Materi diperbarui", judul, "sys");
+      }
+      go("studio");
+      break;
+    }
+    case "materi-hapus": {
+      const m = materiById(Number(v));
+      konfirmasi("Hapus materi?", "<b>" + esc(m.judulMateri) + "</b> akan dihapus dari database beserta aset terkait di AWS S3. Tindakan ini tidak bisa dibatalkan.", "Hapus materi",
+        () => {
+          state.materi = state.materi.filter((x) => x.idMateri !== m.idMateri);
+          state.kuis.forEach((k) => { if (k.idMateriTerkait === m.idMateri) k.idMateriTerkait = 0; });
+          toast("Materi dihapus", m.judulMateri + " · aset S3 ikut dibersihkan.", "sys");
+        }, true);
+      break;
+    }
+
+    /* --- studio: kuis --- */
+    case "kuis-baru":
+      go("studio-kuis", { editKuis: { baru: true, idKuis: null, judulKuis: "", idMateriTerkait: 0, batasWaktuMenit: 3, poinXPDefault: state.xpConfig.xpSelesaiKuis, aturanMarkdown: "- Satu soal satu jawaban benar\n- Waktu habis, jawaban otomatis dikumpulkan", soal: [{ pertanyaan: "", opsi: ["", "", "", ""], kunci: 0 }] } });
+      break;
+    case "kuis-edit": {
+      const k = kuisById(Number(v));
+      go("studio-kuis", { editKuis: { baru: false, idKuis: k.idKuis, judulKuis: k.judulKuis, idMateriTerkait: k.idMateriTerkait, batasWaktuMenit: k.batasWaktuMenit, poinXPDefault: k.poinXPDefault, aturanMarkdown: k.aturanMarkdown, soal: JSON.parse(JSON.stringify(k.soal)) } });
+      break;
+    }
+    case "soal-tambah": tarikFormKuis(); state.editKuis.soal.push({ pertanyaan: "", opsi: ["", "", "", ""], kunci: 0 }); render(); break;
+    case "soal-hapus": tarikFormKuis(); state.editKuis.soal.splice(Number(n), 1); render(); break;
+    case "soal-kunci": tarikFormKuis(); state.editKuis.soal[Number(n)].kunci = Number(j); render(); break;
+    case "kuis-simpan": {
+      tarikFormKuis();
+      const e = state.editKuis;
+      if (!e.judulKuis.trim()) { toast("Judul belum diisi", "Kuis butuh judul sebelum bisa disimpan.", "sys"); break; }
+      if (!e.soal.length || e.soal.some((s) => !s.pertanyaan.trim() || s.opsi.some((o) => !o.trim()))) {
+        toast("Data belum lengkap", "Setiap soal butuh pertanyaan dan empat pilihan jawaban.", "sys"); break;
+      }
+      if (e.baru) {
+        const id = Math.max(0, ...state.kuis.map((k) => k.idKuis)) + 1;
+        state.kuis.unshift({
+          idKuis: id, judulKuis: e.judulKuis, idMateriTerkait: e.idMateriTerkait, idPembuat: state.meId,
+          batasWaktuMenit: e.batasWaktuMenit, poinXPDefault: e.poinXPDefault, aturanMarkdown: e.aturanMarkdown,
+          soal: e.soal, statusPublik: true,
+        });
+        catatRiwayat("Kuis", id, e.judulKuis, state.xpConfig.xpBuatKuis, "creator");
+      } else {
+        const k = kuisById(e.idKuis);
+        Object.assign(k, { judulKuis: e.judulKuis, idMateriTerkait: e.idMateriTerkait, batasWaktuMenit: e.batasWaktuMenit, poinXPDefault: e.poinXPDefault, aturanMarkdown: e.aturanMarkdown, soal: e.soal });
+        toast("Kuis diperbarui", e.judulKuis, "sys");
+      }
+      go("studio");
+      break;
+    }
+    case "kuis-hapus": {
+      const k = kuisById(Number(v));
+      konfirmasi("Hapus kuis?", "<b>" + esc(k.judulKuis) + "</b> beserta seluruh soalnya akan dihapus dari database.", "Hapus kuis",
+        () => { state.kuis = state.kuis.filter((x) => x.idKuis !== k.idKuis); toast("Kuis dihapus", k.judulKuis, "sys"); }, true);
+      break;
+    }
+
+    /* --- admin: users --- */
+    case "user-peran": {
+      const a = akunById(v);
+      a.peran = a.peran === "Admin" ? "Users" : "Admin";
+      if (a.peran === "Admin") { a.kodePegawai = a.kodePegawai || "RB-ADM-" + a.idAkun.slice(-2); a.tingkatAkses = a.tingkatAkses || "Moderator"; }
+      toast("Peran diperbarui", a.namaLengkap + " sekarang " + a.peran + ".", "sys");
+      render();
+      break;
+    }
+    case "user-suspend": {
+      const a = akunById(v);
+      a.statusAktif = !a.statusAktif;
+      toast(a.statusAktif ? "Akun diaktifkan" : "Akun disuspend", a.namaLengkap, "sys");
+      render();
+      break;
+    }
+    case "user-hapus": {
+      const a = akunById(v);
+      konfirmasi("Hapus akun?", "Akun <b>" + esc(a.namaLengkap) + "</b> dan seluruh riwayat belajarnya akan dihapus permanen.", "Hapus akun",
+        () => {
+          state.akun = state.akun.filter((x) => x.idAkun !== a.idAkun);
+          state.riwayat = state.riwayat.filter((r) => r.idPengguna !== a.idAkun);
+          toast("Akun dihapus", a.namaLengkap, "sys");
+        }, true);
+      break;
+    }
+
+    /* --- admin: konten --- */
+    case "admin-tab": state.adminTab = v; render(); break;
+    case "mod-sembunyi": {
+      const m = materiById(Number(v));
+      m.statusPublik = !m.statusPublik;
+      toast(m.statusPublik ? "Materi ditampilkan" : "Materi disembunyikan", "Notifikasi terkirim ke " + namaPenulis(m.idPenulis) + ".", "sys");
+      render();
+      break;
+    }
+    case "mod-hapus": {
+      const m = materiById(Number(v));
+      konfirmasi("Hapus paksa materi?", "<b>" + esc(m.judulMateri) + "</b> milik " + esc(namaPenulis(m.idPenulis)) + " akan dihapus dari database dan asetnya dibersihkan dari AWS S3. Creator menerima notifikasi otomatis.", "Hapus paksa",
+        () => {
+          state.materi = state.materi.filter((x) => x.idMateri !== m.idMateri);
+          toast("Materi dihapus paksa", "Notifikasi terkirim ke " + namaPenulis(m.idPenulis) + ".", "sys");
+        }, true);
+      break;
+    }
+    case "mod-kuis-sembunyi": {
+      const k = kuisById(Number(v));
+      k.statusPublik = !k.statusPublik;
+      toast(k.statusPublik ? "Kuis ditampilkan" : "Kuis disembunyikan", "Notifikasi terkirim ke " + namaPenulis(k.idPembuat) + ".", "sys");
+      render();
+      break;
+    }
+    case "mod-kuis-hapus": {
+      const k = kuisById(Number(v));
+      konfirmasi("Hapus paksa kuis?", "<b>" + esc(k.judulKuis) + "</b> milik " + esc(namaPenulis(k.idPembuat)) + " akan dihapus permanen.", "Hapus paksa",
+        () => { state.kuis = state.kuis.filter((x) => x.idKuis !== k.idKuis); toast("Kuis dihapus paksa", k.judulKuis, "sys"); }, true);
+      break;
+    }
+
+    /* --- admin: xp --- */
+    case "xp-simpan": {
+      const c = state.xpConfig;
+      c.multiplierLearner = Number($("#mx-learner").value);
+      c.multiplierCreator = Number($("#mx-creator").value);
+      c.xpBacaMateri = Number($("#xp-baca").value);
+      c.xpSelesaiKuis = Number($("#xp-kuis").value);
+      c.xpUnggahMateri = Number($("#xp-unggah").value);
+      c.xpBuatKuis = Number($("#xp-buat").value);
+      toast("Konfigurasi tersimpan", "Bobot XP baru berlaku untuk perolehan berikutnya.", "sys");
+      render();
+      break;
+    }
+    case "reset-musim": {
+      const peserta = state.akun.filter((a) => a.peran === "Users");
+      const jl = [...peserta].sort((a, b) => b.xpLearner - a.xpLearner)[0];
+      const jc = [...peserta].sort((a, b) => b.xpCreator - a.xpCreator)[0];
+      konfirmasi("Mulai musim baru?",
+        "Pemenang musim " + state.season + " diarsipkan — Learner <b>" + esc(jl ? jl.namaLengkap : "-") + "</b>, Creator <b>" + esc(jc ? jc.namaLengkap : "-") +
+        "</b>. Seluruh XP pengguna kemudian di-set 0.", "Reset peringkat",
+        () => {
+          state.arsipMusim.unshift({ musim: state.season, juaraLearner: jl ? jl.namaLengkap : "-", juaraCreator: jc ? jc.namaLengkap : "-", diarsipkan: "2026-08-02" });
+          state.akun.forEach((a) => { a.xpLearner = 0; a.xpCreator = 0; });
+          state.riwayat = [];
+          state.season++;
+          toast("Musim " + state.season + " dimulai", "Peringkat sebelumnya diarsipkan, XP semua pengguna direset.", "sys");
+        }, true);
+      break;
+    }
+
+    /* --- modal --- */
+    case "modal-close": state.modal = null; render(); break;
+    case "modal-ok": { const f = state.modal && state.modal.aksi; state.modal = null; if (f) f(); render(); break; }
+  }
+});
+
+/* ---------- form submit ---------- */
+document.addEventListener("submit", (ev) => {
+  const f = ev.target.closest("[data-act]");
+  if (!f) return;
+  ev.preventDefault();
+  const act = f.dataset.act;
+
+  if (act === "login-submit") {
+    const email = $("#li-email").value.trim().toLowerCase();
+    const pass = $("#li-pass").value;
+    const peran = $("#li-role").value;
+    const akun = state.akun.find((a) => a.email.toLowerCase() === email);
+    if (!akun || pass !== "rahasia123") {
+      state.authError = "Kredensial salah. Periksa kembali email dan kata sandi.";
+      state.authOk = ""; render(); return;
+    }
+    if (!akun.statusAktif) { state.authError = "Akun ini sedang disuspend. Hubungi admin."; render(); return; }
+    state.role = peran;
+    state.meId = peran === "admin" ? "a-01" : (akun.peran === "Users" ? akun.idAkun : "u-01");
+    state.authError = ""; state.authOk = "";
+    toast("Sesi dibuat", "JWT diterbitkan, diarahkan ke beranda.", "sys");
+    go(peran === "admin" ? "admin-users" : "beranda");
+    return;
+  }
+
+  if (act === "register-submit") {
+    const nama = $("#rg-nama").value.trim();
+    const email = $("#rg-email").value.trim().toLowerCase();
+    const pass = $("#rg-pass").value;
+    if (!nama || !email || pass.length < 6) {
+      state.authError = "Lengkapi nama, email, dan kata sandi minimal 6 karakter."; render(); return;
+    }
+    if (state.akun.some((a) => a.email.toLowerCase() === email)) {
+      state.authError = "Email sudah digunakan. Pakai email lain atau masuk ke akun yang ada."; render(); return;
+    }
+    const id = "u-" + String(state.akun.length + 1).padStart(2, "0");
+    state.akun.push({ idAkun: id, namaLengkap: nama, email, peran: "Users", xpLearner: 0, xpCreator: 0, statusAktif: true, tanggalDaftar: "2026-08-02" });
+    state.authError = ""; state.authOk = "Akun berhasil dibuat. Silakan masuk dengan kata sandi tadi.";
+    toast("Registrasi berhasil", nama + " tersimpan ke tabel users.", "sys");
+    go("login");
+    return;
+  }
+
+  if (act === "komentar-submit") {
+    const m = materiById(Number(f.dataset.v));
+    const teks = $("#k-teks").value.trim();
+    if (!teks) return;
+    m.komentar.push({ oleh: me().namaLengkap, teks, tanggal: "2026-08-02" });
+    toast("Komentar terkirim", "Komentar tersimpan pada " + m.judulMateri, "sys");
+    render();
+  }
+});
+
+/* ---------- input live ---------- */
+document.addEventListener("input", (ev) => {
+  const el = ev.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.dataset.act;
+
+  if (act === "search-input") {
+    state.search = el.value;
+    const pos = el.selectionStart;
+    render();
+    const nx = $("#q-materi");
+    if (nx) { nx.focus(); nx.setSelectionRange(pos, pos); }
+  } else if (act === "admin-search") {
+    state.adminSearch = el.value;
+    const pos = el.selectionStart;
+    render();
+    const nx = $("#q-admin");
+    if (nx) { nx.focus(); nx.setSelectionRange(pos, pos); }
+  } else if (act === "editor-live") {
+    state.editMateri.kontenMarkdown = el.value;
+    $("#em-preview").innerHTML = md(el.value);
+  } else if (act === "soal-teks") {
+    state.editKuis.soal[Number(el.dataset.n)].pertanyaan = el.value;
+  } else if (act === "opsi-teks") {
+    state.editKuis.soal[Number(el.dataset.n)].opsi[Number(el.dataset.j)] = el.value;
+  } else if (act === "xp-slider") {
+    const out = $("#" + el.id + "-out");
+    if (out) out.textContent = "×" + Number(el.value).toFixed(2);
+  }
+});
+
+function tarikFormKuis() {
+  const e = state.editKuis;
+  if (!e) return;
+  const j = $("#ek-judul"); if (j) e.judulKuis = j.value;
+  const mt = $("#ek-materi"); if (mt) e.idMateriTerkait = Number(mt.value);
+  const w = $("#ek-waktu"); if (w) e.batasWaktuMenit = Math.max(1, Number(w.value) || 1);
+  const p = $("#ek-poin"); if (p) e.poinXPDefault = Math.max(5, Number(p.value) || 5);
+  const at = $("#ek-aturan"); if (at) e.aturanMarkdown = at.value;
+}
+
+render();
+</script>
