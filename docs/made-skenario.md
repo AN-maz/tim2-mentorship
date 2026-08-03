@@ -22,7 +22,6 @@
 
 ## 2. Template Markdown Use Case Scenario
 
-```markdown
 ### Use Case Name: [Nama Use Case]
 
 | Atribut | Deskripsi |
@@ -60,5 +59,5 @@
 **Exceptional Flows:**
 - **1E.** [Skenario error/gagal dari langkah 1, misal: Koneksi internet terputus]
 - **2E.** [Skenario error/gagal dari langkah 2, misal: Database sistem error]
-```
+
 
