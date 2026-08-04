@@ -1,0 +1,204 @@
+@startuml UC-10-Kelola-Materi
+title Sequence Diagram: Kelola Materi (Upload/Edit/Hapus)
+
+actor "Users (Creator)" as User
+participant "Halaman Kelola Materi\ndengan Editor Markdown\n(React)" as UI
+participant "POST /api/materi\nPUT /api/materi/:id\nDELETE /api/materi/:id" as API
+participant "MateriController" as Controller
+participant "MateriService\nXPService" as Service
+database "PostgreSQL\n(tabel Materi,\ntabel Pengguna)" as DB
+participant "AWS S3" as S3
+
+== Flow Normal - Tambah Materi Baru ==
+
+User -> UI: Mengakses menu\n"Kelola Materi"
+activate UI
+UI -> API: GET /api/materi/my-materi
+activate API
+API -> Controller: getMyMateri()
+activate Controller
+Controller -> Service: getMateriByCreator(userId)
+activate Service
+Service -> DB: SELECT * FROM Materi\nWHERE idPenulis = '[userId]'\nORDER BY tanggalUnggah DESC
+activate DB
+DB --> Service: Return daftar materi\nyang pernah dibuat
+deactivate DB
+Service --> Controller: { success: true, data: [...] }
+Controller --> API: Response 200 OK
+API --> UI: Data materi
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Menampilkan daftar materi\ndan tombol "Tambah Materi"
+User -> UI: Klik "Tambah Materi Baru"
+UI --> User: Tampilkan form editor\n(Judul, Konten Markdown,\nUpload File/Gambar)
+User -> UI: Mengisi judul materi
+User -> UI: Menulis konten Markdown
+User -> UI: Menyisipkan file/gambar\n(opsional)
+User -> UI: Klik "Preview"
+UI -> UI: Render preview markdown
+UI --> User: Menampilkan preview
+User -> UI: Klik "Simpan"
+UI -> UI: Validasi client-side
+
+alt Validasi lokal berhasil
+    opt Ada file untuk diupload
+        UI -> S3: Upload file/gambar ke S3
+        activate S3
+        S3 --> UI: Return URL file\nyang sudah diupload
+        deactivate S3
+        UI -> UI: Replace placeholder\ndi markdown dengan URL S3
+    end
+    
+    UI -> API: POST /api/materi\n{ judulMateri, kontenMarkdown,\nidPenulis, fileUrls: [...] }
+    activate API
+    API -> Controller: createMateri()
+    activate Controller
+    Controller -> Service: saveNewMateri(data)
+    activate Service
+    Service -> Service: Validasi struktur Markdown\ndan sanitasi konten
+    
+    alt Markdown valid
+        Service -> DB: BEGIN TRANSACTION
+        activate DB
+        Service -> DB: INSERT INTO Materi\n(judulMateri, kontenMarkdown,\nidPenulis, tanggalUnggah,\nstatus_publik, totalDilihat,\nratingRataRata)\nVALUES ('[judul]', '[konten]',\n'[userId]', NOW(),\ntrue, 0, 0)
+        DB --> Service: Return idMateri baru
+        Service -> Service: Kalkulasi XP Creator\n(20 XP untuk upload materi)
+        Service -> DB: UPDATE Pengguna SET\nxpCreator = xpCreator + 20,\ntotalXP = totalXP + 20\nWHERE idAkun = '[userId]'
+        DB --> Service: UPDATE success
+        Service -> DB: COMMIT TRANSACTION
+        DB --> Service: Transaction committed
+        deactivate DB
+        Service --> Controller: { success: true,\nmateriId: X, xpGained: 20 }
+        Controller --> API: Response 201 Created
+        API --> UI: Response sukses
+        UI --> User: Tampilkan notifikasi\n"Materi berhasil ditambahkan!\n+20 XP Creator"
+        UI --> User: Redirect ke daftar materi\natau preview materi baru
+    else Markdown tidak valid
+        Service --> Controller: { success: false,\nerror: "Format Markdown\ntidak valid" }
+        Controller --> API: Response 400 Bad Request
+        API --> UI: Error response
+        UI --> User: Tampilkan error,\nmateri tidak disimpan
+    end
+    
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    
+else Validasi client gagal
+    UI --> User: Tampilkan error validasi
+end
+
+deactivate UI
+
+== Alternate Flow A - Edit Materi ==
+
+User -> UI: Pilih materi dan klik "Edit"
+activate UI
+UI -> API: GET /api/materi/:id/edit
+activate API
+API -> Controller: getMateriForEdit(id)
+activate Controller
+Controller -> Service: checkOwnershipAndGetData(id, userId)
+activate Service
+Service -> DB: SELECT * FROM Materi\nWHERE idMateri = '[id]'\nAND idPenulis = '[userId]'
+activate DB
+DB --> Service: Return data materi
+deactivate DB
+
+alt User adalah pemilik
+    Service --> Controller: { success: true, data: {...} }
+    Controller --> API: Response 200 OK
+    API --> UI: Data materi
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    UI --> User: Tampilkan editor dengan\ndata materi existing
+    User -> UI: Mengubah judul/konten
+    User -> UI: Klik "Simpan Perubahan"
+    UI -> API: PUT /api/materi/:id
+    activate API
+    API -> Controller: updateMateri(id)
+    activate Controller
+    Controller -> Service: updateMateri(id, data, userId)
+    activate Service
+    Service -> DB: UPDATE Materi SET\njudulMateri = '[judul]',\nkontenMarkdown = '[konten]',\ntanggalEdit = NOW()\nWHERE idMateri = '[id]'\nAND idPenulis = '[userId]'
+    activate DB
+    DB --> Service: UPDATE success
+    deactivate DB
+    Service -> DB: UPDATE Pengguna SET\nxpCreator = xpCreator + 5\n(lebih sedikit untuk edit)
+    activate DB
+    DB --> Service: XP updated
+    deactivate DB
+    Service --> Controller: { success: true, xpGained: 5 }
+    Controller --> API: Response 200 OK
+    API --> UI: Response sukses
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    UI --> User: Tampilkan notifikasi\n"Materi berhasil diupdate\n+5 XP"
+else User bukan pemilik
+    Service --> Controller: { success: false,\nerror: "Unauthorized" }
+    deactivate Service
+    Controller --> API: Response 403 Forbidden
+    deactivate Controller
+    API --> UI: Error
+    deactivate API
+    UI --> User: Tampilkan error\n"Anda tidak memiliki akses"
+end
+
+deactivate UI
+
+== Alternate Flow B - Hapus Materi ==
+
+User -> UI: Pilih materi dan klik "Hapus"
+activate UI
+UI --> User: Tampilkan konfirmasi\n"Yakin hapus materi?\nData tidak dapat dikembalikan"
+User -> UI: Klik "Ya, Hapus"
+UI -> API: DELETE /api/materi/:id
+activate API
+API -> Controller: deleteMateri(id)
+activate Controller
+Controller -> Service: deleteMateri(id, userId)
+activate Service
+Service -> DB: SELECT fileUrls FROM Materi\nWHERE idMateri = '[id]'\nAND idPenulis = '[userId]'
+activate DB
+DB --> Service: Return file URLs
+deactivate DB
+Service -> DB: DELETE FROM Materi\nWHERE idMateri = '[id]'\nAND idPenulis = '[userId]'
+activate DB
+DB --> Service: DELETE success
+deactivate DB
+Service -> S3: Delete files dari S3
+activate S3
+S3 --> Service: Files deleted
+deactivate S3
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Tampilkan notifikasi\n"Materi berhasil dihapus"
+UI -> UI: Update daftar materi
+deactivate UI
+
+== Exception: Upload S3 Gagal ==
+
+note over S3
+  Jika upload S3 gagal:
+  - Tampilkan error
+  - Materi tidak disimpan
+  - User kembali ke editor
+end note
+
+== Exception: Database INSERT Gagal ==
+
+note over DB
+  Jika INSERT gagal:
+  - ROLLBACK transaction
+  - Hapus file dari S3 (rollback)
+  - Tampilkan error message
+end note
+
+@enduml

@@ -1,0 +1,83 @@
+@startuml UC-04-Mencari-Materi
+title Sequence Diagram: Mencari Materi
+
+actor "Users (Learner)" as User
+participant "Halaman Daftar Materi\ndengan Search Box\n(React)" as UI
+participant "GET /api/materi/search" as API
+participant "MateriController" as Controller
+participant "MateriService" as Service
+database "PostgreSQL\n(tabel Materi)" as DB
+
+User -> UI: Berada di halaman daftar materi
+activate UI
+UI --> User: Menampilkan kolom pencarian
+User -> UI: Mengklik kolom pencarian
+User -> UI: Mengetikkan kata kunci\n(misal: "database")
+
+opt Real-time search dengan debounce
+    UI -> UI: Debounce input\n(delay 500ms)
+end
+
+User -> UI: Tekan "Cari" atau Enter
+
+alt Kata kunci >= 3 karakter
+    UI -> API: GET /api/materi/search\n?keyword=[keyword]
+    activate API
+    API -> Controller: searchMateri(keyword)
+    activate Controller
+    Controller -> Service: searchByKeyword(keyword)
+    activate Service
+    Service -> Service: Sanitasi keyword\n(prevent SQL injection)
+    Service -> DB: SELECT * FROM Materi\nWHERE (judulMateri ILIKE '%keyword%'\nOR kontenMarkdown ILIKE '%keyword%')\nAND status_publik = true\nORDER BY tanggalUnggah DESC
+    activate DB
+    DB --> Service: Return array hasil pencarian
+    deactivate DB
+    
+    alt Ada hasil ditemukan
+        Service -> Service: Highlight kata kunci\ndalam hasil (opsional)
+        Service --> Controller: { success: true,\ndata: [...hasil], count: X }
+        Controller --> API: Response 200 OK
+        API --> UI: Data hasil pencarian
+        UI --> User: Menampilkan hasil pencarian\ndengan highlight
+        UI --> User: Tampilkan "Ditemukan X materi"
+        User -> UI: Memilih materi dari hasil\n(lanjut ke UC-03)
+    else Tidak ada hasil
+        Service --> Controller: { success: true,\ndata: [], message: "Tidak ada hasil" }
+        Controller --> API: Response 200 OK
+        API --> UI: Data kosong
+        UI --> User: Tampilkan "Tidak ada materi\nyang cocok dengan '[keyword]'"
+        UI --> User: Tampilkan saran\n"Coba kata kunci lain"
+    end
+    
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    
+else Kata kunci < 3 karakter
+    UI --> User: Tampilkan pesan validasi\n"Masukkan minimal 3 karakter"
+end
+
+deactivate UI
+
+== Alternate Flow - Menghapus Kata Kunci ==
+
+User -> UI: Menghapus semua teks\ndi kolom pencarian
+activate UI
+UI -> API: GET /api/materi\n(request daftar semua materi)
+activate API
+note right: Kembali ke UC-03\nflow normal
+API --> UI: Return semua materi
+deactivate API
+UI --> User: Tampilkan daftar\nsemua materi
+deactivate UI
+
+== Exception: Pencarian Gagal ==
+
+note over DB
+  Jika query error:
+  - Tampilkan error message
+  - Kembalikan ke daftar materi
+    sebelum pencarian (cache)
+end note
+
+@enduml

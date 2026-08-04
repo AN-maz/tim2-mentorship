@@ -1,0 +1,185 @@
+@startuml UC-13-Moderasi-Konten
+title Sequence Diagram: Moderasi Materi dan Kuis (Admin)
+
+actor "Admin" as Admin
+participant "Dashboard Admin\nHalaman Moderasi\n(React)" as UI
+participant "GET /api/admin/content\nPUT /api/admin/content/:id/moderate\nDELETE /api/admin/content/:id" as API
+participant "ModerationController" as Controller
+participant "ModerationService\nNotificationService" as Service
+database "PostgreSQL\n(tabel Materi, Kuis,\nModerationLog,\nPengguna)" as DB
+participant "AWS S3" as S3
+
+Admin -> UI: Mengakses menu\n"Kelola Materi / Kuis"
+activate UI
+UI -> API: GET /api/admin/content
+activate API
+API -> Controller: getAllContent()
+activate Controller
+Controller -> Service: getContentList()
+activate Service
+Service -> DB: SELECT * FROM Materi\nUNION\nSELECT * FROM Kuis\nORDER BY tanggalUnggah DESC
+activate DB
+DB --> Service: Return array semua konten\n(materi + kuis) dengan info:\njudul, creator, tanggal,\nstatus, view/pengerjaan
+deactivate DB
+Service --> Controller: { success: true, data: [...] }
+Controller --> API: Response 200 OK
+API --> UI: Data konten
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Menampilkan daftar konten\ndengan kolom lengkap
+UI --> Admin: Tampilkan filter (status,\ncreator, tanggal) dan pencarian
+Admin -> UI: Mencari dan memilih konten\nyang perlu dimoderasi
+UI -> API: GET /api/admin/content/:id
+activate API
+API -> Controller: getContentDetail(id)
+activate Controller
+Controller -> Service: getDetailWithCreator(id)
+activate Service
+Service -> DB: SELECT konten dengan JOIN\nke Pengguna untuk info creator
+activate DB
+DB --> Service: Return konten lengkap\ndengan detail creator
+deactivate DB
+Service --> Controller: { success: true, data: {...} }
+Controller --> API: Response 200 OK
+API --> UI: Detail konten
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Menampilkan preview konten\ndan detail creator
+UI --> Admin: Tampilkan menu aksi:\nSembunyikan, Hapus Permanen,\nApprove/Pulihkan
+
+== Flow Normal - Sembunyikan Konten ==
+
+Admin -> UI: Pilih aksi "Sembunyikan"
+UI --> Admin: Tampilkan dialog dengan\nfield "Alasan Moderasi"
+Admin -> UI: Isi alasan moderasi\n(misal: "Konten spam")
+Admin -> UI: Klik "Ya, Sembunyikan"
+UI -> API: PUT /api/admin/content/:id/moderate\n{ action: 'hide', reason: '...' }
+activate API
+API -> Controller: moderateContent(id)
+activate Controller
+Controller -> Service: hideContent(id, reason, adminId)
+activate Service
+Service -> DB: BEGIN TRANSACTION
+activate DB
+Service -> DB: UPDATE Materi/Kuis SET\nstatus_publik = false,\nalasan_moderate = '[reason]',\nmoderated_by = '[adminId]',\nmoderated_at = NOW()\nWHERE id = '[id]'
+DB --> Service: UPDATE success
+Service -> DB: INSERT INTO ModerationLog\n(admin_id, content_id, content_type,\naction, reason, timestamp)\nVALUES ('[adminId]', '[contentId]',\n'materi', 'hide', '[reason]', NOW())
+DB --> Service: Log saved
+Service -> DB: COMMIT TRANSACTION
+DB --> Service: Transaction committed
+deactivate DB
+Service ->> NotificationService: notifyCreator(creatorId,\n'content_hidden', reason)
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Konten berhasil disembunyikan"
+UI -> UI: Update status konten\ndi daftar
+deactivate UI
+
+== Alternate Flow A - Hapus Permanen ==
+
+Admin -> UI: Pilih aksi "Hapus Paksa"
+activate UI
+UI --> Admin: Tampilkan peringatan\n"PERHATIAN: Hapus permanen.\nSemua data (riwayat belajar,\nkomentar, rating) terhapus"
+UI --> Admin: Tampilkan field alasan\ndan konfirmasi (ketik "HAPUS")
+Admin -> UI: Isi alasan dan ketik "HAPUS"
+Admin -> UI: Klik "Ya, Hapus Permanen"
+UI -> API: DELETE /api/admin/content/:id\n{ reason: '...' }
+activate API
+API -> Controller: deleteContent(id)
+activate Controller
+Controller -> Service: permanentDeleteContent(id, reason, adminId)
+activate Service
+Service -> DB: BEGIN TRANSACTION
+activate DB
+Service -> DB: SELECT fileUrls, idPenulis\nFROM Materi/Kuis\nWHERE id = '[id]'
+DB --> Service: Return file URLs dan creator ID
+Service -> DB: DELETE FROM Materi/Kuis\nWHERE id = '[id]'\n(cascade delete ke RiwayatBelajar,\nKomentar, Rating, Soal)
+DB --> Service: CASCADE DELETE success
+Service -> DB: INSERT INTO ModerationLog\n(admin_id, content_id, action,\nreason)\nVALUES ('[adminId]', '[contentId]',\n'delete', '[reason]')
+DB --> Service: Log saved
+Service -> DB: COMMIT TRANSACTION
+DB --> Service: Transaction committed
+deactivate DB
+Service ->> S3: Delete semua file aset\ndari S3 bucket
+Service ->> NotificationService: Notifikasi ke creator
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Konten berhasil dihapus"
+UI -> UI: Hapus entry dari daftar
+deactivate UI
+
+== Alternate Flow B - Approve/Pulihkan ==
+
+Admin -> UI: Pilih konten tersembunyi,\nklik "Pulihkan / Approve"
+activate UI
+UI --> Admin: Tampilkan konfirmasi\n"Pulihkan konten dan buat\npublik kembali?"
+Admin -> UI: Klik "Ya, Pulihkan"
+UI -> API: PUT /api/admin/content/:id/approve
+activate API
+API -> Controller: approveContent(id)
+activate Controller
+Controller -> Service: approveContent(id, adminId)
+activate Service
+Service -> DB: UPDATE Materi/Kuis SET\nstatus_publik = true,\nalasan_moderate = NULL,\nmoderated_by = '[adminId]'\nWHERE id = '[id]'
+activate DB
+DB --> Service: UPDATE success
+deactivate DB
+Service -> DB: INSERT INTO ModerationLog\n(admin_id, content_id, action)\nVALUES ('[adminId]', '[contentId]',\n'approve')
+activate DB
+DB --> Service: Log saved
+deactivate DB
+Service ->> NotificationService: Notifikasi "Konten disetujui"
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Konten berhasil dipulihkan"
+UI -> UI: Update status konten
+deactivate UI
+
+== Alternate: Melihat History Moderasi ==
+
+Admin -> UI: Klik "Lihat History"
+activate UI
+UI -> API: GET /api/admin/content/:id/history
+activate API
+API -> Controller: getModerationHistory(id)
+activate Controller
+Controller -> Service: getHistory(id)
+activate Service
+Service -> DB: SELECT * FROM ModerationLog\nWHERE content_id = '[id]'\nORDER BY timestamp DESC
+activate DB
+DB --> Service: Return history\n(siapa moderate, kapan, alasan)
+deactivate DB
+Service --> Controller: Return history data
+Controller --> API: Response 200 OK
+API --> UI: Data history
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Menampilkan timeline\nhistory moderasi
+deactivate UI
+
+== Exception: Konten Sedang Digunakan ==
+
+note over Service, DB
+  Jika ada pengguna sedang
+  mengerjakan kuis saat dihapus:
+  - Tampilkan warning
+  - Handle gracefully jika lanjut
+    (simpan progress, notif ke user)
+end note
+
+@enduml

@@ -1,0 +1,113 @@
+@startuml UC-06-Memberi-Komentar
+title Sequence Diagram: Memberi Komentar
+
+actor "Users (Learner)" as User
+participant "Halaman Detail Materi\ndengan Bagian Komentar\n(React)" as UI
+participant "POST /api/komentar\nPUT /api/komentar/:id\nDELETE /api/komentar/:id" as API
+participant "KomentarController" as Controller
+participant "KomentarService" as Service
+database "PostgreSQL\n(tabel Komentar)" as DB
+
+== Flow Normal - Menulis Komentar Baru ==
+
+User -> UI: Scroll ke bagian komentar
+activate UI
+UI --> User: Menampilkan daftar komentar\ndan tombol "Tulis Komentar"
+User -> UI: Klik "Tulis Komentar"
+UI --> User: Menampilkan textbox komentar
+User -> UI: Menulis teks komentar
+User -> UI: Klik "Kirim"
+UI -> UI: Validasi client-side\n(tidak kosong, max 1000 char)
+
+alt Komentar valid
+    UI -> API: POST /api/komentar\n{ idMateri, idPengguna,\nteksKomentar, tanggal }
+    activate API
+    API -> Controller: createKomentar()
+    activate Controller
+    Controller -> Service: saveKomentar(data)
+    activate Service
+    Service -> Service: Validasi server-side\n(tidak kosong, <= 1000 char,\nsanitasi konten)
+    
+    alt Validasi server berhasil
+        Service -> DB: INSERT INTO Komentar\n(idMateri, idPengguna,\nteksKomentar, tanggal)\nVALUES ('[id]', '[userId]',\n'[teks]', NOW())
+        activate DB
+        DB --> Service: Return idKomentar baru\ndengan data lengkap
+        deactivate DB
+        Service --> Controller: { success: true,\ndata: {komentar baru} }
+        Controller --> API: Response 201 Created
+        API --> UI: Response sukses
+        UI --> User: Tampilkan notifikasi\n"Komentar berhasil"
+        UI --> User: Render komentar baru\ndi daftar
+        UI -> UI: Clear textbox
+    else Konten tidak pantas/spam
+        Service -> Service: Filter deteksi\nkonten tidak pantas
+        Service --> Controller: { success: false,\nerror: "Konten tidak pantas" }
+        Controller --> API: Response 400 Bad Request
+        API --> UI: Error response
+        UI --> User: Tampilkan error message
+    end
+    
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    
+else Komentar kosong/terlalu panjang
+    UI --> User: Tampilkan error validasi
+end
+
+deactivate UI
+
+== Alternate Flow A - Edit Komentar ==
+
+User -> UI: Klik "Edit" pada\nkomentarnya sendiri
+activate UI
+UI -> UI: Cek kepemilikan\n(idPengguna == current user)
+UI --> User: Tampilkan textbox dengan\nteks komentar existing
+User -> UI: Mengubah teks
+User -> UI: Klik "Simpan Perubahan"
+UI -> API: PUT /api/komentar/:id\n{ teksKomentar: "teks baru" }
+activate API
+API -> Controller: updateKomentar(id)
+activate Controller
+Controller -> Service: updateKomentar(id, data)
+activate Service
+Service -> DB: UPDATE Komentar SET\nteksKomentar = '[teks]',\ntanggalEdit = NOW()\nWHERE idKomentar = '[id]'\nAND idPengguna = '[userId]'
+activate DB
+DB --> Service: UPDATE success
+deactivate DB
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Update UI dengan komentar\nyang diubah (label "diedit")
+deactivate UI
+
+== Alternate Flow B - Hapus Komentar ==
+
+User -> UI: Klik "Hapus" pada\nkomentarnya sendiri
+activate UI
+UI --> User: Tampilkan konfirmasi\n"Yakin hapus komentar?"
+User -> UI: Klik "Ya"
+UI -> API: DELETE /api/komentar/:id
+activate API
+API -> Controller: deleteKomentar(id)
+activate Controller
+Controller -> Service: deleteKomentar(id, userId)
+activate Service
+Service -> DB: DELETE FROM Komentar\nWHERE idKomentar = '[id]'\nAND idPengguna = '[userId]'
+activate DB
+DB --> Service: DELETE success
+deactivate DB
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Hapus komentar dari UI\ndengan animasi
+UI --> User: Tampilkan notifikasi\n"Komentar berhasil dihapus"
+deactivate UI
+
+@enduml
