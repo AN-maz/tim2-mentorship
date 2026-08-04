@@ -1,0 +1,127 @@
+@startuml UC-02-Register
+title Sequence Diagram: Register
+
+actor "Users\n(calon Learner/Creator)" as User
+participant "Halaman Register\n(React)" as UI
+participant "POST /api/auth/register" as API
+participant "AuthController" as Controller
+participant "AuthService" as Service
+database "PostgreSQL\n(tabel Pengguna)" as DB
+participant "Google Auth" as Google
+
+== Flow Normal - Register Manual ==
+
+User -> UI: Membuka halaman registrasi
+activate UI
+UI --> User: Menampilkan form register
+User -> UI: Mengisi form (nama, email, password)\ndan klik "Daftar"
+UI -> UI: Validasi client-side\n(format email, password >= 8 char)
+
+alt Validasi lokal berhasil
+    UI -> API: POST { namaLengkap, email, password }
+    activate API
+    API -> Controller: register()
+    activate Controller
+    Controller -> Service: registerUser(data)
+    activate Service
+    Service -> Service: Validasi server-side
+    
+    alt Format valid
+        Service -> Service: Hash password (bcrypt)
+        Service -> DB: SELECT email FROM Akun\nWHERE email = '[email]'
+        activate DB
+        DB --> Service: Return hasil pengecekan
+        deactivate DB
+        
+        alt Email belum terdaftar
+            Service -> DB: BEGIN TRANSACTION
+            activate DB
+            Service -> DB: INSERT INTO Pengguna\n(namaLengkap, email, passwordHash,\nxpLearner=0, xpCreator=0,\ntotalXP=0, statusAktif=true)
+            DB --> Service: Return idPengguna baru
+            Service -> DB: COMMIT TRANSACTION
+            DB --> Service: Transaction success
+            deactivate DB
+            Service --> Controller: { success: true }
+            Controller --> API: Response 201 Created
+            API --> UI: Response sukses
+            UI --> User: Tampilkan notifikasi\n"Registrasi berhasil!"
+            UI --> User: Redirect ke halaman login
+        else Email sudah terdaftar
+            Service --> Controller: { success: false,\nerror: "Email sudah digunakan" }
+            Controller --> API: Response 409 Conflict
+            API --> UI: Error response
+            UI --> User: Tampilkan error\n"Email sudah digunakan"
+        end
+        
+    else Format tidak valid
+        Service --> Controller: { success: false,\nerror: "Format tidak valid" }
+        Controller --> API: Response 400 Bad Request
+        API --> UI: Error response
+        UI --> User: Tampilkan error validasi
+    end
+    
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    
+else Validasi client gagal
+    UI --> User: Tampilkan error validasi\ndi form
+end
+
+deactivate UI
+
+== Flow Alternatif - Register via Google Auth ==
+
+User -> UI: Klik "Daftar via Google"
+activate UI
+UI -> Google: Redirect ke Google Auth
+activate Google
+Google --> User: Halaman login Google
+User -> Google: Authorize akun Google
+Google --> UI: Return token & profil\n(nama, email)
+deactivate Google
+
+UI -> API: POST /api/auth/google-register\ndengan token
+activate API
+API -> Controller: googleRegister()
+activate Controller
+Controller -> Service: registerViaGoogle(token)
+activate Service
+Service -> Service: Verify Google token\ndan ekstrak profil
+Service -> DB: SELECT email FROM Akun\nWHERE email = '[google_email]'
+activate DB
+DB --> Service: Return hasil pengecekan
+deactivate DB
+
+alt Email belum terdaftar
+    Service -> DB: INSERT INTO Pengguna\n(namaLengkap, email, googleId,\nxpLearner=0, xpCreator=0,\ntotalXP=0, statusAktif=true)
+    activate DB
+    DB --> Service: Return idPengguna baru
+    deactivate DB
+    Service -> Service: Generate JWT token
+    Service --> Controller: { success: true, token, user }
+    Controller --> API: Response 201 Created
+    API --> UI: Response sukses dengan token
+    UI -> UI: Simpan token ke localStorage
+    UI --> User: Redirect langsung ke Home
+else Email sudah terdaftar
+    Service --> Controller: { success: false,\nerror: "Email sudah digunakan" }
+    Controller --> API: Response 409 Conflict
+    API --> UI: Error response
+    UI --> User: Tampilkan error
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Exceptional Flow - Database Error ==
+
+note over DB
+  Jika INSERT gagal,
+  sistem akan ROLLBACK transaction
+  dan menampilkan error message
+end note
+
+@enduml

@@ -1,0 +1,89 @@
+@startuml UC-07-Belajar-Materi
+title Sequence Diagram: Belajar Materi
+
+actor "Users (Learner)" as User
+participant "Halaman Detail Materi\ndengan Mode Belajar\n(React)" as UI
+participant "POST /api/riwayat-belajar/complete" as API
+participant "RiwayatBelajarController" as Controller
+participant "RiwayatBelajarService" as Service
+database "PostgreSQL\n(tabel RiwayatBelajar,\ntabel Pengguna)" as DB
+
+User -> UI: Mengakses detail materi\ndan masuk mode belajar
+activate UI
+UI --> User: Menampilkan konten materi\ndengan tombol "Tandai Selesai"
+User -> User: Membaca dan mempelajari\nkonten materi
+User -> UI: Scroll sampai akhir materi
+User -> UI: Klik "Tandai Selesai"
+UI -> API: POST /api/riwayat-belajar/complete\n{ idPengguna, idKonten,\ntipeKonten: 'materi' }
+activate API
+API -> Controller: markComplete()
+activate Controller
+Controller -> Service: completeMateri(data)
+activate Service
+Service -> DB: SELECT * FROM RiwayatBelajar\nWHERE idPengguna = '[userId]'\nAND idKonten = '[materiId]'\nAND tipeKonten = 'materi'
+activate DB
+DB --> Service: Return hasil pengecekan
+deactivate DB
+
+alt Belum pernah menyelesaikan
+    Service -> Service: Kalkulasi XP\n(base XP = 10)
+    Service -> DB: BEGIN TRANSACTION
+    activate DB
+    Service -> DB: INSERT INTO RiwayatBelajar\n(idPengguna, idKonten, tipeKonten,\nxpDidapat, tanggalSelesai)\nVALUES ('[userId]', '[materiId]',\n'materi', 10, NOW())
+    DB --> Service: INSERT success
+    Service -> DB: UPDATE Pengguna SET\nxpLearner = xpLearner + 10,\ntotalXP = totalXP + 10\nWHERE idAkun = '[userId]'
+    DB --> Service: Return updated user data\n(totalXP baru)
+    Service -> Service: Cek threshold rank\nberdasarkan totalXP baru
+    
+    alt totalXP mencapai threshold baru
+        Service -> DB: UPDATE Pengguna SET\nrankPeringkat = '[new_rank]'\nWHERE idAkun = '[userId]'
+        DB --> Service: Rank UPDATE success
+        Service -> DB: COMMIT TRANSACTION
+        DB --> Service: Transaction committed
+        deactivate DB
+        Service --> Controller: { success: true,\nxpGained: 10, rankUp: true,\nnewRank: 'Bronze' }
+        Controller --> API: Response 200 OK
+        API --> UI: Response sukses dengan rank up
+        UI --> User: Tampilkan notifikasi\n"Selamat! +10 XP Learner"
+        UI --> User: Tampilkan modal\n"Rank naik! Anda sekarang Bronze"
+        UI -> UI: Update tombol\n"Sudah Diselesaikan" (disabled)
+    else totalXP belum mencapai threshold
+        Service -> DB: COMMIT TRANSACTION
+        activate DB
+        DB --> Service: Transaction committed
+        deactivate DB
+        Service --> Controller: { success: true,\nxpGained: 10, rankUp: false }
+        Controller --> API: Response 200 OK
+        API --> UI: Response sukses
+        UI --> User: Tampilkan notifikasi\n"Selamat! +10 XP Learner"
+        UI -> UI: Update tombol\n"Sudah Diselesaikan" (disabled)
+    end
+    
+else Sudah pernah menyelesaikan
+    Service --> Controller: { success: false,\nmessage: "Sudah diselesaikan",\nalreadyCompleted: true }
+    Controller --> API: Response 200 OK
+    API --> UI: Response
+    UI --> User: Tampilkan pesan\n"Anda sudah menyelesaikan\nmateri ini sebelumnya"
+    UI -> UI: Tombol tetap\n"Sudah Diselesaikan" (disabled)
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Exception: Database Error ==
+
+note over DB
+  Jika INSERT RiwayatBelajar gagal:
+  - ROLLBACK TRANSACTION
+  - Tampilkan error
+  - User dapat coba lagi
+  
+  Jika UPDATE XP gagal:
+  - ROLLBACK TRANSACTION
+  - Log error untuk background job
+  - Sinkronisasi nanti
+end note
+
+@enduml

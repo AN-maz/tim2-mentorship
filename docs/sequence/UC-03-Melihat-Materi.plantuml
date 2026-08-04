@@ -1,0 +1,93 @@
+@startuml UC-03-Melihat-Materi
+title Sequence Diagram: Melihat Materi
+
+actor "Users (Learner)" as User
+participant "Halaman Daftar\n& Detail Materi\n(React)" as UI
+participant "GET /api/materi\nGET /api/materi/:id" as API
+participant "MateriController" as Controller
+participant "MateriService" as Service
+database "PostgreSQL\n(tabel Materi)" as DB
+participant "React Markdown" as Markdown
+
+== Fase 1: Melihat Daftar Materi ==
+
+User -> UI: Mengakses halaman\ndaftar materi
+activate UI
+UI -> API: GET /api/materi
+activate API
+API -> Controller: getAllMateri()
+activate Controller
+Controller -> Service: getPublicMateri()
+activate Service
+Service -> DB: SELECT * FROM Materi\nWHERE status_publik = true\nORDER BY tanggalUnggah DESC
+activate DB
+DB --> Service: Return array materi\n(id, judul, penulis, rating,\ntotalDilihat, tanggalUnggah)
+deactivate DB
+
+alt Ada materi tersedia
+    Service --> Controller: { success: true, data: [...materi] }
+    Controller --> API: Response 200 OK
+    API --> UI: Data materi
+    UI --> User: Menampilkan daftar materi\n(judul, penulis, rating, views)
+else Tidak ada materi
+    Service --> Controller: { success: true, data: [] }
+    Controller --> API: Response 200 OK
+    API --> UI: Data kosong
+    UI --> User: Tampilkan pesan\n"Belum ada materi tersedia"
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+
+== Fase 2: Melihat Detail Materi ==
+
+User -> UI: Mengklik judul materi
+UI -> API: GET /api/materi/:id
+activate API
+API -> Controller: getMateriById(id)
+activate Controller
+Controller -> Service: getMateriDetail(id)
+activate Service
+Service -> DB: SELECT * FROM Materi\nWHERE idMateri = '[id]'\nAND status_publik = true
+activate DB
+DB --> Service: Return data materi lengkap\n(kontenMarkdown, dll)
+deactivate DB
+
+alt Materi ditemukan
+    Service -> DB: UPDATE Materi SET\ntotalDilihat = totalDilihat + 1\nWHERE idMateri = '[id]'
+    activate DB
+    DB --> Service: Update success
+    deactivate DB
+    Service --> Controller: { success: true, data: {materi} }
+    Controller --> API: Response 200 OK
+    API --> UI: Data materi lengkap
+    UI -> Markdown: Parse kontenMarkdown ke HTML
+    activate Markdown
+    Markdown --> UI: Return HTML ter-render
+    deactivate Markdown
+    UI --> User: Menampilkan halaman detail\ndengan konten lengkap
+    User -> User: Membaca materi
+else Materi tidak ditemukan
+    Service --> Controller: { success: false,\nerror: "Materi tidak ditemukan" }
+    Controller --> API: Response 404 Not Found
+    API --> UI: Error response
+    UI --> User: Tampilkan error message
+    UI --> User: Redirect ke daftar materi
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Exception: Markdown Rendering Error ==
+
+note over Markdown
+  Jika rendering gagal,
+  tampilkan raw text atau
+  safe rendering dengan
+  warning message
+end note
+
+@enduml

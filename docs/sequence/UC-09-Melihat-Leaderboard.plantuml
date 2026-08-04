@@ -1,0 +1,127 @@
+@startuml UC-09-Melihat-Leaderboard
+title Sequence Diagram: Melihat Leaderboard (Ranked)
+
+actor "Users\n(Learner/Creator)" as User
+participant "Halaman Leaderboard\ndengan Tab Kategori\n(React)" as UI
+participant "GET /api/leaderboard" as API
+participant "LeaderboardController" as Controller
+participant "LeaderboardService" as Service
+database "PostgreSQL\n(tabel Pengguna,\ntabel RiwayatBelajar)" as DB
+
+User -> UI: Klik menu "Leaderboard"
+activate UI
+UI -> API: GET /api/leaderboard\n?category=total&period=all
+activate API
+API -> Controller: getLeaderboard(params)
+activate Controller
+Controller -> Service: getRankings(category, period)
+activate Service
+Service -> DB: SELECT idAkun, namaLengkap,\ntotalXP, xpLearner, xpCreator,\nrankPeringkat FROM Pengguna\nWHERE totalXP > 0\nORDER BY totalXP DESC\nLIMIT 100
+activate DB
+DB --> Service: Return array data pengguna\ndengan XP tertinggi
+deactivate DB
+
+alt Ada data ranking
+    Service -> Service: Tambahkan nomor\nperingkat (rank)
+    Service -> Service: Cari posisi pengguna\nyang sedang login
+    Service --> Controller: { success: true,\ndata: [...rankings],\nuserPosition: X,\nuserRank: 'Bronze' }
+    Controller --> API: Response 200 OK
+    API --> UI: Data leaderboard
+    UI --> User: Menampilkan leaderboard\ndengan tab (Total XP,\nLearner, Creator)
+    UI --> User: Tampilkan setiap entry:\nperingkat, nama, XP, rank badge
+    UI -> UI: Highlight baris user\nyang sedang login
+    User -> User: Melihat peringkat\ndiri sendiri dan lainnya
+else Belum ada data ranking
+    Service --> Controller: { success: true,\ndata: [], message:\n"Belum ada data" }
+    Controller --> API: Response 200 OK
+    API --> UI: Data kosong
+    UI --> User: Tampilkan pesan\n"Belum ada data leaderboard"
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Alternate: Switch Kategori ==
+
+User -> UI: Klik tab "Learner Terbaik"
+activate UI
+UI -> API: GET /api/leaderboard\n?category=learner&period=all
+activate API
+API -> Controller: getLeaderboard()
+activate Controller
+Controller -> Service: getRankings('learner', 'all')
+activate Service
+Service -> DB: SELECT idAkun, namaLengkap,\nxpLearner, rankPeringkat\nFROM Pengguna\nWHERE xpLearner > 0\nORDER BY xpLearner DESC\nLIMIT 100
+activate DB
+DB --> Service: Return data sorted by xpLearner
+deactivate DB
+Service --> Controller: Return rankings
+Controller --> API: Response 200 OK
+API --> UI: Data learner terbaik
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Tampilkan leaderboard\nLearner
+deactivate UI
+
+== Alternate: Filter Periode Waktu ==
+
+User -> UI: Pilih filter "Minggu Ini"
+activate UI
+UI -> API: GET /api/leaderboard\n?category=total&period=week
+activate API
+API -> Controller: getLeaderboard()
+activate Controller
+Controller -> Service: getRankings('total', 'week')
+activate Service
+Service -> DB: SELECT P.idAkun, P.namaLengkap,\nSUM(R.xpDidapat) as totalXPPeriod\nFROM Pengguna P\nJOIN RiwayatBelajar R\nON P.idAkun = R.idPengguna\nWHERE R.tanggalSelesai >=\nDATE_TRUNC('week', NOW())\nGROUP BY P.idAkun\nORDER BY totalXPPeriod DESC\nLIMIT 100
+activate DB
+DB --> Service: Return data XP\nuntuk periode minggu ini
+deactivate DB
+Service --> Controller: Return rankings
+Controller --> API: Response 200 OK
+API --> UI: Data periode minggu ini
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Tampilkan leaderboard\nminggu ini
+deactivate UI
+
+== Alternate: Load More Pagination ==
+
+User -> UI: Scroll sampai akhir,\nklik "Lihat Lebih Banyak"
+activate UI
+UI -> API: GET /api/leaderboard\n?offset=100&limit=100
+activate API
+API -> Controller: getLeaderboard(offset)
+activate Controller
+Controller -> Service: getRankings() dengan offset
+activate Service
+Service -> DB: SELECT ... ORDER BY totalXP DESC\nLIMIT 100 OFFSET 100
+activate DB
+DB --> Service: Return 100 entry berikutnya\n(rank 101-200)
+deactivate DB
+Service --> Controller: Return data rank 101-200
+Controller --> API: Response 200 OK
+API --> UI: Data tambahan
+deactivate Service
+deactivate Controller
+deactivate API
+UI -> UI: Append data baru\nke list yang ada
+UI --> User: Tampilkan ranking 101-200
+deactivate UI
+
+== Exception: User Tidak Masuk Top List ==
+
+note over Service, DB
+  Jika user tidak di top 100:
+  - Query posisi aktual user
+  - Tampilkan info di bawah:
+    "Anda di peringkat X.
+     Kumpulkan XP untuk
+     masuk top 100!"
+end note
+
+@enduml

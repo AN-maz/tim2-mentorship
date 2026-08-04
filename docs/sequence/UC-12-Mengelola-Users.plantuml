@@ -1,0 +1,174 @@
+@startuml UC-12-Mengelola-Users
+title Sequence Diagram: Mengelola Users (Admin)
+
+actor "Admin" as Admin
+participant "Dashboard Admin\nHalaman Kelola Users\n(React)" as UI
+participant "GET /api/admin/users\nPUT /api/admin/users/:id\nDELETE /api/admin/users/:id" as API
+participant "AdminUserController" as Controller
+participant "AdminUserService" as Service
+database "PostgreSQL\n(tabel Akun,\ntabel Pengguna,\ntabel AuditLog)" as DB
+
+Admin -> UI: Mengakses menu\n"Kelola Users"
+activate UI
+UI -> API: GET /api/admin/users
+activate API
+API -> Controller: getAllUsers()
+activate Controller
+Controller -> Service: getUserList()
+activate Service
+Service -> DB: SELECT * FROM Akun\nORDER BY tanggalDaftar DESC
+activate DB
+DB --> Service: Return array semua pengguna\n(ID, Nama, Email, Role,\nStatus, Tanggal Daftar, XP)
+deactivate DB
+Service --> Controller: { success: true, data: [...] }
+Controller --> API: Response 200 OK
+API --> UI: Data pengguna
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Menampilkan tabel pengguna\ndengan kolom lengkap
+UI --> Admin: Tampilkan filter (role, status)\ndan pencarian
+Admin -> UI: Memilih pengguna\n(klik row)
+UI --> Admin: Menampilkan detail dan\nmenu aksi: Edit Role,\nSuspend, Hapus
+
+== Flow Normal - Edit Role ==
+
+Admin -> UI: Pilih aksi "Edit Role"
+UI --> Admin: Tampilkan dialog\npilihan role (User, Admin)
+Admin -> UI: Pilih role baru\n(misal: User ke Admin)
+Admin -> UI: Klik "Simpan"
+UI -> API: PUT /api/admin/users/:id/role\n{ newRole: 'Admin' }
+activate API
+API -> Controller: updateRole(id)
+activate Controller
+Controller -> Service: changeUserRole(id, newRole, adminId)
+activate Service
+Service -> DB: BEGIN TRANSACTION
+activate DB
+Service -> DB: UPDATE Akun SET\nrole = '[newRole]'\nWHERE idAkun = '[id]'
+DB --> Service: UPDATE success
+Service -> DB: INSERT INTO AuditLog\n(admin_id, action, target_user_id,\ndetails, timestamp)\nVALUES ('[adminId]', 'edit_role',\n'[userId]', 'Changed role to Admin',\nNOW())
+DB --> Service: Audit log saved
+Service -> DB: COMMIT TRANSACTION
+DB --> Service: Transaction committed
+deactivate DB
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Role berhasil diubah"
+UI -> UI: Refresh daftar pengguna
+deactivate UI
+
+== Alternate Flow A - Suspend Akun ==
+
+Admin -> UI: Pilih aksi "Suspend Akun"
+activate UI
+UI --> Admin: Tampilkan konfirmasi\n"Yakin suspend akun?\nPengguna tidak dapat login"
+UI --> Admin: Tampilkan field "Alasan Suspend"
+Admin -> UI: Isi alasan suspend
+Admin -> UI: Klik "Ya, Suspend"
+UI -> API: PUT /api/admin/users/:id/suspend\n{ alasanSuspend: "..." }
+activate API
+API -> Controller: suspendUser(id)
+activate Controller
+Controller -> Service: suspendAccount(id, reason, adminId)
+activate Service
+Service -> DB: BEGIN TRANSACTION
+activate DB
+Service -> DB: UPDATE Akun SET\nstatusAktif = false,\nalasanSuspend = '[reason]'\nWHERE idAkun = '[id]'
+DB --> Service: UPDATE success
+Service -> DB: INSERT INTO AuditLog\n(admin_id, action, target_user_id,\ndetails, timestamp)\nVALUES ('[adminId]', 'suspend',\n'[userId]', '[reason]', NOW())
+DB --> Service: Audit log saved
+Service -> DB: COMMIT TRANSACTION
+DB --> Service: Transaction committed
+deactivate DB
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Akun berhasil disuspend"
+UI -> UI: Update status pengguna\ndi tabel
+deactivate UI
+
+== Alternate Flow B - Hapus Akun ==
+
+Admin -> UI: Pilih aksi "Hapus Akun"
+activate UI
+UI --> Admin: Tampilkan peringatan\n"PERHATIAN: Hapus permanen.\nSemua data (materi, kuis,\nriwayat) akan terhapus"
+UI --> Admin: Tampilkan field konfirmasi\n(harus ketik "HAPUS")
+Admin -> UI: Ketik "HAPUS"
+Admin -> UI: Klik "Ya, Hapus Permanen"
+UI -> API: DELETE /api/admin/users/:id
+activate API
+API -> Controller: deleteUser(id)
+activate Controller
+Controller -> Service: deleteAccount(id, adminId)
+activate Service
+Service -> DB: BEGIN TRANSACTION
+activate DB
+Service -> DB: SELECT fileUrls FROM Materi\nWHERE idPenulis = '[id]'\n(cek file S3 yang perlu dihapus)
+DB --> Service: Return list file URLs
+Service -> DB: DELETE FROM Akun\nWHERE idAkun = '[id]'\n(cascade delete ke Materi,\nKuis, RiwayatBelajar,\nKomentar, Rating)
+DB --> Service: CASCADE DELETE success
+Service -> DB: INSERT INTO AuditLog\n(admin_id, action, target_user_id,\ndetails)\nVALUES ('[adminId]', 'delete_user',\n'[userId]', 'Permanent delete')
+DB --> Service: Audit log saved
+Service -> DB: COMMIT TRANSACTION
+DB --> Service: Transaction committed
+deactivate DB
+Service ->> S3: Delete files terkait\ndari S3 (background task)
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Akun berhasil dihapus"
+UI -> UI: Hapus entry dari tabel
+deactivate UI
+
+== Alternate Flow C - Unsuspend Akun ==
+
+Admin -> UI: Pilih akun suspended,\nklik "Aktifkan Kembali"
+activate UI
+UI --> Admin: Tampilkan konfirmasi
+Admin -> UI: Klik "Ya, Aktifkan"
+UI -> API: PUT /api/admin/users/:id/unsuspend
+activate API
+API -> Controller: unsuspendUser(id)
+activate Controller
+Controller -> Service: unsuspendAccount(id, adminId)
+activate Service
+Service -> DB: UPDATE Akun SET\nstatusAktif = true,\nalasanSuspend = NULL\nWHERE idAkun = '[id]'
+activate DB
+DB --> Service: UPDATE success
+deactivate DB
+Service -> DB: INSERT INTO AuditLog\n(admin_id, action, target_user_id)\nVALUES ('[adminId]', 'unsuspend',\n'[userId]')
+activate DB
+DB --> Service: Log saved
+deactivate DB
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Akun diaktifkan kembali"
+UI -> UI: Update status di tabel
+deactivate UI
+
+== Exception: Error Suspend Admin Lain ==
+
+note over Service
+  Jika admin mencoba suspend
+  admin lain dengan level sama
+  atau lebih tinggi:
+  - Tampilkan error "Unauthorized"
+  - Operasi dibatalkan
+end note
+
+@enduml

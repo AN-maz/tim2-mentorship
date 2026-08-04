@@ -1,0 +1,228 @@
+@startuml UC-14-Manajemen-XP-Ranked
+title Sequence Diagram: Manajemen XP dan Ranked (Admin)
+
+actor "Admin" as Admin
+participant "Dashboard Admin\nHalaman XP & Ranked\n(React)" as UI
+participant "GET /api/admin/xp-config\nPUT /api/admin/xp-config\nPOST /api/admin/season/reset\nPOST /api/admin/xp/recalculate" as API
+participant "XPManagementController" as Controller
+participant "XPManagementService\nNotificationService" as Service
+database "PostgreSQL\n(tabel SystemConfig,\nConfigChangeLog,\nPengguna, RiwayatBelajar,\nSeason, SeasonWinners)" as DB
+
+== Flow Normal - Ubah Bobot XP ==
+
+Admin -> UI: Mengakses menu\n"Manajemen XP & Ranked"
+activate UI
+UI -> API: GET /api/admin/xp-config
+activate API
+API -> Controller: getCurrentConfig()
+activate Controller
+Controller -> Service: getConfig()
+activate Service
+Service -> DB: SELECT * FROM SystemConfig\nWHERE config_type = 'xp_settings'
+activate DB
+DB --> Service: Return konfigurasi XP saat ini
+deactivate DB
+Service -> DB: SELECT COUNT(*), AVG(totalXP),\nMAX(totalXP) FROM Pengguna\n(statistik leaderboard)
+activate DB
+DB --> Service: Return statistik
+deactivate DB
+Service --> Controller: { success: true,\nconfig: {...}, stats: {...} }
+Controller --> API: Response 200 OK
+API --> UI: Data konfigurasi dan statistik
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Menampilkan dashboard dengan\nkonfigurasi XP saat ini\ndan statistik leaderboard
+UI --> Admin: Tampilkan form parameter:\nXP per baca materi, XP per kuis,\nXP per upload, XP per buat kuis
+Admin -> UI: Pilih "Ubah Bobot XP"
+Admin -> UI: Sesuaikan nilai parameter\n(misal: 10 → 15)
+Admin -> UI: Klik "Preview Impact"
+UI -> UI: Kalkulasi simulasi dampak
+UI --> Admin: Tampilkan estimasi dampak\n"Rata-rata XP naik 20%"
+Admin -> UI: Klik "Simpan Konfigurasi"
+
+alt Parameter valid (0-1000)
+    UI -> API: PUT /api/admin/xp-config\n{ xp_read_materi: 15,\nxp_complete_quiz: 50,\nxp_upload_materi: 20,\nxp_create_quiz: 30 }
+    activate API
+    API -> Controller: updateConfig()
+    activate Controller
+    Controller -> Service: updateXPConfig(newConfig, adminId)
+    activate Service
+    Service -> DB: BEGIN TRANSACTION
+    activate DB
+    Service -> DB: SELECT * FROM SystemConfig\nWHERE config_type = 'xp_settings'\n(get old values)
+    DB --> Service: Return old config
+    Service -> DB: UPDATE SystemConfig SET\nconfig_value = '[newConfig]',\nupdated_at = NOW(),\nupdated_by = '[adminId]'\nWHERE config_type = 'xp_settings'
+    DB --> Service: UPDATE success
+    Service -> DB: INSERT INTO ConfigChangeLog\n(admin_id, parameter_changed,\nold_value, new_value, timestamp)\nVALUES ('[adminId]', 'xp_read_materi',\n10, 15, NOW())
+    DB --> Service: Log saved
+    Service -> DB: COMMIT TRANSACTION
+    DB --> Service: Transaction committed
+    deactivate DB
+    Service --> Controller: { success: true }
+    Controller --> API: Response 200 OK
+    API --> UI: Response sukses
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    UI --> Admin: Tampilkan notifikasi\n"Konfigurasi XP berhasil\ndiperbarui"
+    UI -> UI: Refresh dashboard
+else Parameter tidak valid
+    UI --> Admin: Tampilkan error\n"Nilai XP harus 0-1000"
+end
+
+deactivate UI
+
+== Alternate Flow A - Reset Season ==
+
+Admin -> UI: Pilih "Reset Peringkat\n(Season Baru)"
+activate UI
+UI -> API: GET /api/admin/season/current
+activate API
+API -> Controller: getCurrentSeason()
+activate Controller
+Controller -> Service: getSeasonInfo()
+activate Service
+Service -> DB: SELECT * FROM Season\nWHERE status = 'active'\nORDER BY start_date DESC\nLIMIT 1
+activate DB
+DB --> Service: Return info season aktif
+deactivate DB
+Service -> DB: SELECT idAkun, namaLengkap,\ntotalXP, rankPeringkat\nFROM Pengguna\nORDER BY totalXP DESC\nLIMIT 10
+activate DB
+DB --> Service: Return top 10 winners
+deactivate DB
+Service --> Controller: { season: {...},\ntopWinners: [...] }
+Controller --> API: Response 200 OK
+API --> UI: Info season
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan info season\n(start date, top winners)
+UI --> Admin: Tampilkan peringatan\n"Reset akan mengarsipkan\npemenang dan reset XP ke 0"
+Admin -> UI: Isi nama season baru\n"Season 2 - August 2026"
+Admin -> UI: Klik "Ya, Mulai Season Baru"
+UI -> API: POST /api/admin/season/reset\n{ newSeasonName: "..." }
+activate API
+API -> Controller: resetSeason()
+activate Controller
+Controller -> Service: startNewSeason(seasonName, adminId)
+activate Service
+Service -> DB: BEGIN TRANSACTION
+activate DB
+Service -> DB: UPDATE Season SET\nstatus = 'ended',\nend_date = NOW()\nWHERE status = 'active'
+DB --> Service: Old season closed
+Service -> DB: INSERT INTO SeasonWinners\nSELECT idAkun, namaLengkap,\ntotalXP, xpLearner, xpCreator,\nrankPeringkat, '[seasonName]',\nNOW() as end_date\nFROM Pengguna\nWHERE totalXP > 0\nORDER BY totalXP DESC
+DB --> Service: Winners archived
+Service -> DB: UPDATE Pengguna SET\ntotalXP = 0, xpLearner = 0,\nxpCreator = 0,\nrankPeringkat = 'Unranked'
+DB --> Service: All XP reset
+Service -> DB: INSERT INTO Season\n(season_name, start_date, status)\nVALUES ('[newSeasonName]', NOW(),\n'active')
+DB --> Service: New season created
+Service -> DB: COMMIT TRANSACTION
+DB --> Service: Transaction committed
+deactivate DB
+Service ->> NotificationService: broadcastToAllUsers(\n'new_season', message)
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Season berhasil direset"
+deactivate UI
+
+== Alternate Flow B - Rekalkulasi XP ==
+
+Admin -> UI: Pilih "Rekalkulasi XP\nSemua Pengguna"
+activate UI
+UI --> Admin: Tampilkan warning\n"Proses lama, akan hitung\nulang dari RiwayatBelajar"
+Admin -> UI: Klik "Mulai Rekalkulasi"
+UI -> API: POST /api/admin/xp/recalculate
+activate API
+API -> Controller: recalculateAllXP()
+activate Controller
+Controller -> Service: recalculateXPForAllUsers(adminId)
+activate Service
+Service ->> BackgroundJob: Start background job
+Service --> Controller: { success: true,\nmessage: "Rekalkulasi dimulai",\njobId: "..." }
+Controller --> API: Response 202 Accepted
+API --> UI: Response job started
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan progress bar\n"Rekalkulasi dimulai..."
+
+note over Service, DB
+  Background Job Process:
+  1. SELECT all user IDs
+  2. Loop untuk setiap user:
+     - SELECT SUM(xpDidapat)
+       FROM RiwayatBelajar
+       GROUP BY tipeKonten
+     - Kalkulasi totalXP
+     - UPDATE Pengguna SET
+       xpLearner, xpCreator, totalXP
+  3. Generate report
+  4. Log ke ConfigChangeLog
+end note
+
+UI -> API: Poll GET /api/admin/xp/\nrecalculate/status\n(every 2 seconds)
+activate API
+API --> UI: { status: 'completed',\nupdated: X }
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Rekalkulasi selesai.\nX pengguna diupdate"
+deactivate UI
+
+== Alternate Flow C - Atur Threshold Rank ==
+
+Admin -> UI: Pilih "Kelola Rank Tiers"
+activate UI
+UI -> API: GET /api/admin/rank-tiers
+activate API
+API -> Controller: getRankTiers()
+activate Controller
+Controller -> Service: getRankConfig()
+activate Service
+Service -> DB: SELECT * FROM SystemConfig\nWHERE config_type = 'rank_thresholds'
+activate DB
+DB --> Service: Return rank tiers\n(Bronze: 100, Silver: 500,\nGold: 1000, dll)
+deactivate DB
+Service --> Controller: Return config
+Controller --> API: Response 200 OK
+API --> UI: Data rank tiers
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan daftar rank tier\ndengan threshold masing-masing
+Admin -> UI: Ubah threshold\n(Bronze: 100 → 150)
+Admin -> UI: Klik "Simpan Threshold"
+UI -> API: PUT /api/admin/rank-tiers\n{ Bronze: 150, Silver: 500, ... }
+activate API
+API -> Controller: updateRankTiers()
+activate Controller
+Controller -> Service: updateRankThresholds(newThresholds)
+activate Service
+Service -> DB: UPDATE SystemConfig SET\nconfig_value = '[newThresholds]'\nWHERE config_type = 'rank_thresholds'
+activate DB
+DB --> Service: UPDATE success
+deactivate DB
+Service ->> BackgroundJob: Trigger rekalkulasi rank\nsemua pengguna
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> Admin: Tampilkan notifikasi\n"Rank threshold diupdate"
+deactivate UI
+
+== Exception: Transaction Rollback ==
+
+note over DB
+  Jika salah satu query gagal
+  saat reset season:
+  - ROLLBACK semua perubahan
+  - Data tetap aman
+  - Tampilkan error ke admin
+end note
+
+@enduml

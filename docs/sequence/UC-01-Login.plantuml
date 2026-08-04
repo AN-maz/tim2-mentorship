@@ -1,0 +1,109 @@
+@startuml UC-01-Login
+title Sequence Diagram: Login
+
+actor "Users/Admin" as User
+participant "Halaman Login\n(React)" as UI
+participant "POST /api/auth/login" as API
+participant "AuthController" as Controller
+participant "AuthService" as Service
+database "PostgreSQL\n(tabel Akun)" as DB
+participant "Google Auth" as Google
+
+== Flow Normal - Login Manual ==
+
+User -> UI: Membuka halaman login
+activate UI
+UI --> User: Menampilkan form login
+User -> UI: Memasukkan email & password\ndan klik "Login"
+UI -> API: POST kredensial
+activate API
+API -> Controller: login()
+activate Controller
+Controller -> Service: validateCredentials(email, password)
+activate Service
+Service -> DB: SELECT * FROM Akun\nWHERE email = '[email]'
+activate DB
+DB --> Service: Return data akun\n(password hash, statusAktif)
+deactivate DB
+
+alt Akun ditemukan & statusAktif = true
+    Service -> Service: Verify password hash\n(bcrypt.compare)
+    
+    alt Password cocok
+        Service -> Service: Generate JWT token
+        Service --> Controller: { success: true, token, user }
+        Controller --> API: Response 200 OK
+        API --> UI: Response sukses
+        UI -> UI: Simpan token ke localStorage
+        UI --> User: Redirect ke Home
+    else Password tidak cocok
+        Service --> Controller: { success: false,\nerror: "Email atau password salah" }
+        Controller --> API: Response 401 Unauthorized
+        API --> UI: Error response
+        UI --> User: Tampilkan alert error
+    end
+    
+else Akun tidak ditemukan OR statusAktif = false
+    Service --> Controller: { success: false,\nerror: "Akun tidak aktif" }
+    Controller --> API: Response 403 Forbidden
+    API --> UI: Error response
+    UI --> User: Tampilkan alert error
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Flow Alternatif - Login via Google Auth ==
+
+User -> UI: Klik "Login via Google"
+activate UI
+UI -> Google: Redirect ke Google Auth
+activate Google
+Google --> User: Halaman login Google
+User -> Google: Masukkan kredensial Google
+Google --> UI: Return token & data profil
+deactivate Google
+
+UI -> API: POST /api/auth/google-login\ndengan token
+activate API
+API -> Controller: googleLogin()
+activate Controller
+Controller -> Service: verifyGoogleToken(token)
+activate Service
+Service -> Service: Verify token & ekstrak email
+Service -> DB: SELECT * FROM Akun\nWHERE email = '[google_email]'
+activate DB
+DB --> Service: Return data akun (jika ada)
+deactivate DB
+
+alt Akun terdaftar
+    Service -> Service: Generate JWT token
+    Service --> Controller: { success: true, token, user }
+    Controller --> API: Response 200 OK
+    API --> UI: Response sukses
+    UI -> UI: Simpan token ke localStorage
+    UI --> User: Redirect ke Home
+else Akun tidak terdaftar
+    Service --> Controller: { success: false,\nerror: "Akun belum terdaftar" }
+    Controller --> API: Response 404 Not Found
+    API --> UI: Error response
+    UI --> User: Tampilkan pesan\n"Silakan register terlebih dahulu"
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Exceptional Flow - Database Error ==
+
+note over DB
+  Jika terjadi database error,
+  sistem akan rollback dan
+  menampilkan error message
+  ke user
+end note
+
+@enduml

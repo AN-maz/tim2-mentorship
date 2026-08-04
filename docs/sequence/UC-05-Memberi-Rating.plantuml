@@ -1,0 +1,98 @@
+@startuml UC-05-Memberi-Rating
+title Sequence Diagram: Memberi Rating
+
+actor "Users (Learner)" as User
+participant "Halaman Detail Materi\ndengan Komponen Rating\n(React)" as UI
+participant "POST /api/rating" as API
+participant "RatingController" as Controller
+participant "RatingService" as Service
+database "PostgreSQL\n(tabel Rating,\ntabel Materi)" as DB
+
+User -> UI: Berada di halaman detail materi
+activate UI
+UI --> User: Menampilkan komponen\nrating bintang (1-5)
+User -> UI: Mengklik bintang\n(misal: 4 bintang)
+UI -> UI: Update UI bintang\n(visual feedback)
+UI -> API: POST /api/rating\n{ idMateri, idPengguna, nilaiRating: 4 }
+activate API
+API -> Controller: submitRating()
+activate Controller
+Controller -> Service: createOrUpdateRating(data)
+activate Service
+
+alt Rating valid (1-5)
+    Service -> DB: SELECT * FROM Rating\nWHERE idMateri = '[id]'\nAND idPengguna = '[userId]'
+    activate DB
+    DB --> Service: Return hasil pengecekan
+    deactivate DB
+    
+    alt Pengguna belum pernah rating
+        Service -> DB: INSERT INTO Rating\n(idMateri, idPengguna,\nnilaiRating, tanggal)\nVALUES ('[id]', '[userId]', 4, NOW())
+        activate DB
+        DB --> Service: INSERT success
+        deactivate DB
+        Service -> DB: SELECT AVG(nilaiRating)\nFROM Rating\nWHERE idMateri = '[id]'
+        activate DB
+        DB --> Service: Return ratingRataRata baru
+        deactivate DB
+        Service -> DB: UPDATE Materi SET\nratingRataRata = '[avg]'\nWHERE idMateri = '[id]'
+        activate DB
+        DB --> Service: UPDATE success
+        deactivate DB
+        Service --> Controller: { success: true,\nmessage: "Rating berhasil",\nnewAverage: '[avg]' }
+        Controller --> API: Response 201 Created
+        API --> UI: Response sukses
+        UI --> User: Tampilkan notifikasi\n"Rating berhasil diberikan"
+        UI --> User: Update UI dengan\nrating terbaru
+    else Pengguna sudah pernah rating
+        Service --> Controller: { success: false,\nmessage: "Sudah rating",\ncurrentRating: X, confirm: true }
+        Controller --> API: Response 200 OK
+        API --> UI: Response konfirmasi
+        UI --> User: Tampilkan dialog\n"Anda sudah rating X bintang.\nUbah rating?"
+        
+        alt User pilih "Ya, Ubah"
+            User -> UI: Klik "Ya"
+            UI -> API: POST /api/rating/update\n{ forceUpdate: true, nilaiRating: 4 }
+            activate API
+            API -> Controller: updateRating()
+            Controller -> Service: updateExistingRating()
+            Service -> DB: UPDATE Rating SET\nnilaiRating = 4, tanggal = NOW()\nWHERE idMateri = '[id]'\nAND idPengguna = '[userId]'
+            activate DB
+            DB --> Service: UPDATE success
+            deactivate DB
+            note right: Lanjut kalkulasi rata-rata
+            Service -> DB: Kalkulasi ulang\nratingRataRata
+            DB --> Service: Return avg baru
+            Service --> Controller: { success: true }
+            Controller --> API: Response 200 OK
+            API --> UI: Response sukses
+            deactivate API
+            UI --> User: Update UI
+        else User pilih "Batal"
+            User -> UI: Klik "Batal"
+            UI --> User: Tutup dialog,\ntidak ada perubahan
+        end
+    end
+    
+else Rating tidak valid (bukan 1-5)
+    Service --> Controller: { success: false,\nerror: "Rating harus 1-5" }
+    Controller --> API: Response 400 Bad Request
+    API --> UI: Error response
+    UI --> User: Tampilkan error
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Exception: Error Kalkulasi Rata-Rata ==
+
+note over DB
+  Jika UPDATE rata-rata gagal,
+  rating individual tetap tersimpan.
+  Background job akan kalkulasi
+  ulang nanti.
+end note
+
+@enduml

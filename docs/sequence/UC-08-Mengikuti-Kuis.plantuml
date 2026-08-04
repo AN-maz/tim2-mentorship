@@ -1,0 +1,126 @@
+@startuml UC-08-Mengikuti-Kuis
+title Sequence Diagram: Mengikuti Kuis
+
+actor "Users (Learner)" as User
+participant "Halaman Kuis\ndengan Timer\n(React)" as UI
+participant "GET /api/kuis/:id\nPOST /api/kuis/:id/submit" as API
+participant "KuisController" as Controller
+participant "KuisService" as Service
+database "PostgreSQL\n(tabel Kuis, Soal,\nKunciJawaban,\nRiwayatBelajar,\nPengguna)" as DB
+
+== Fase 1: Memulai Kuis ==
+
+User -> UI: Memilih kuis dari daftar
+activate UI
+UI -> API: GET /api/kuis/:id
+activate API
+API -> Controller: getKuisInfo(id)
+activate Controller
+Controller -> Service: getKuisDetail(id)
+activate Service
+Service -> DB: SELECT * FROM Kuis\nWHERE idKuis = '[id]'
+activate DB
+DB --> Service: Return info kuis\n(judul, jumlah soal,\nbatas waktu, poin)
+deactivate DB
+Service --> Controller: { success: true, data: {...} }
+Controller --> API: Response 200 OK
+API --> UI: Data info kuis
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Menampilkan info kuis
+User -> UI: Klik "Mulai Kuis"
+UI -> API: GET /api/kuis/:id/soal
+activate API
+API -> Controller: getSoal(id)
+activate Controller
+Controller -> Service: getSoalKuis(id)
+activate Service
+Service -> DB: SELECT * FROM Soal\nWHERE idKuis = '[id]'\nORDER BY urutan
+activate DB
+DB --> Service: Return array soal\n(tanpa kunci jawaban)
+deactivate DB
+Service --> Controller: { success: true, data: [...soal] }
+Controller --> API: Response 200 OK
+API --> UI: Data soal
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Menampilkan soal pertama
+UI -> UI: Memulai timer countdown\n(misal: 30 menit)
+
+== Fase 2: Mengerjakan Kuis ==
+
+loop Untuk setiap soal
+    User -> UI: Membaca soal dan\nmemilih jawaban (A/B/C/D)
+    UI -> UI: Menyimpan jawaban ke\nstate local/temporary
+    User -> UI: Klik "Soal Berikutnya"
+    UI -> UI: Update nomor soal,\ntampilkan soal berikutnya
+end
+
+== Fase 3: Submit Jawaban ==
+
+User -> UI: Setelah semua soal,\nklik "Kumpulkan Jawaban"
+UI -> API: POST /api/kuis/:id/submit\n{ idPengguna, idKuis, jawaban:\n[{idSoal, jawabanDipilih},...],\nwaktuPengerjaan }
+activate API
+API -> Controller: submitKuis()
+activate Controller
+Controller -> Service: evaluateKuis(data)
+activate Service
+Service -> DB: SELECT * FROM KunciJawaban\nWHERE idKuis = '[id]'
+activate DB
+DB --> Service: Return array kunci jawaban
+deactivate DB
+
+alt Kunci jawaban ditemukan
+    Service -> Service: Loop & cocokkan\njawaban dengan kunci
+    Service -> Service: Hitung jumlah\njawaban benar
+    Service -> Service: Kalkulasi skor\n(benar/total × 100)
+    Service -> Service: Kalkulasi XP Learner\n(berdasarkan skor,\nmisal: 80% = 40 XP)
+    Service -> DB: BEGIN TRANSACTION
+    activate DB
+    Service -> DB: INSERT INTO RiwayatBelajar\n(idPengguna, idKonten,\ntipeKonten, xpDidapat, skor,\ntanggalSelesai)\nVALUES ('[userId]', '[kuisId]',\n'kuis', 40, 80, NOW())
+    DB --> Service: INSERT success
+    Service -> DB: UPDATE Pengguna SET\nxpLearner = xpLearner + 40,\ntotalXP = totalXP + 40\nWHERE idAkun = '[userId]'
+    DB --> Service: User XP updated
+    Service -> Service: Cek threshold rank
+    Service -> DB: COMMIT TRANSACTION
+    DB --> Service: Transaction committed
+    deactivate DB
+    Service --> Controller: { success: true,\nskor: 80, benar: 8,\ntotal: 10, xpGained: 40,\ndetailJawaban: [...] }
+    Controller --> API: Response 200 OK
+    API --> UI: Hasil evaluasi
+    UI --> User: Menampilkan halaman hasil\n(skor, jawaban benar/salah,\nXP yang didapat)
+    UI --> User: Tampilkan detail per soal
+else Kunci jawaban tidak ditemukan
+    Service --> Controller: { success: false,\nerror: "Kunci jawaban\ntidak ditemukan" }
+    Controller --> API: Response 500
+    API --> UI: Error response
+    UI --> User: Tampilkan error\n"Hubungi admin"
+end
+
+deactivate Service
+deactivate Controller
+deactivate API
+deactivate UI
+
+== Alternate: Waktu Habis ==
+
+note over UI
+  Jika timer mencapai 00:00:
+  - UI auto-disable semua input
+  - Auto-submit dengan jawaban
+    yang sudah diisi
+  - Soal belum dijawab = salah
+end note
+
+== Alternate: Review Jawaban ==
+
+note over User, UI
+  Sebelum submit, user bisa
+  klik "Review Jawaban" untuk
+  melihat ringkasan dan mengubah
+  jawaban jika perlu
+end note
+
+@enduml

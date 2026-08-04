@@ -1,0 +1,204 @@
+@startuml UC-11-Kelola-Kuis
+title Sequence Diagram: Kelola Kuis (Buat/Edit/Hapus)
+
+actor "Users (Creator)" as User
+participant "Halaman Kelola Kuis\ndengan Editor Soal\n(React)" as UI
+participant "POST /api/kuis\nPUT /api/kuis/:id\nDELETE /api/kuis/:id" as API
+participant "KuisController" as Controller
+participant "KuisService\nXPService" as Service
+database "PostgreSQL\n(tabel Kuis, Soal,\nKunciJawaban,\nPengguna)" as DB
+
+== Flow Normal - Buat Kuis Baru ==
+
+User -> UI: Mengakses menu "Kelola Kuis"
+activate UI
+UI -> API: GET /api/kuis/my-kuis
+activate API
+API -> Controller: getMyKuis()
+activate Controller
+Controller -> Service: getKuisByCreator(userId)
+activate Service
+Service -> DB: SELECT * FROM Kuis\nWHERE idCreator = '[userId]'\nORDER BY tanggalBuat DESC
+activate DB
+DB --> Service: Return daftar kuis
+deactivate DB
+Service --> Controller: { success: true, data: [...] }
+Controller --> API: Response 200 OK
+API --> UI: Data kuis
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Menampilkan daftar kuis\ndan tombol "Buat Kuis Baru"
+User -> UI: Klik "Buat Kuis Baru"
+UI --> User: Tampilkan form:\nJudul, Materi Terkait,\nAturan (Markdown),\nBatas Waktu, Bobot Poin
+User -> UI: Mengisi judul kuis
+User -> UI: Pilih materi terkait\n(opsional)
+User -> UI: Tulis aturan/instruksi\ndalam Markdown
+User -> UI: Atur batas waktu\n(misal: 30 menit)
+User -> UI: Atur bobot poin\n(misal: 10 poin/soal)
+User -> UI: Klik "Lanjut ke Soal"
+UI --> User: Tampilkan editor soal
+
+loop Menyusun soal (minimal 1)
+    User -> UI: Menyusun soal dalam Markdown
+    User -> UI: Tambahkan pilihan jawaban\n(A, B, C, D)
+    User -> UI: Tandai jawaban yang benar
+    User -> UI: Klik "Tambah Soal Lagi"\natau "Selesai"
+end
+
+User -> UI: Klik "Simpan Kuis"
+UI -> UI: Validasi client-side\n(minimal 1 soal, semua\npunya jawaban benar)
+
+alt Validasi berhasil
+    UI -> API: POST /api/kuis\n{ judulKuis, idMateriTerkait,\naturanMarkdown, batasWaktuMenit,\npoinXPDefault, soal: [...] }
+    activate API
+    API -> Controller: createKuis()
+    activate Controller
+    Controller -> Service: saveNewKuis(data)
+    activate Service
+    Service -> Service: Validasi format Markdown\ndan kelengkapan data
+    
+    alt Data kuis valid
+        Service -> DB: BEGIN TRANSACTION
+        activate DB
+        Service -> DB: INSERT INTO Kuis\n(judulKuis, idMateriTerkait,\naturanMarkdown, batasWaktuMenit,\npoinXPDefault, idCreator,\ntanggalBuat)\nVALUES ('[judul]', '[materiId]',\n'[aturan]', 30, 10,\n'[userId]', NOW())
+        DB --> Service: Return idKuis baru
+        
+        loop Untuk setiap soal
+            Service -> DB: INSERT INTO Soal\n(idKuis, pertanyaanMarkdown,\nopsiA, opsiB, opsiC, opsiD,\nurutan)\nVALUES ('[kuisId]',\n'[pertanyaan]',\n'[A]', '[B]', '[C]', '[D]', 1)
+            DB --> Service: Return idSoal baru
+            Service -> DB: INSERT INTO KunciJawaban\n(idSoal, jawabanBenar)\nVALUES ('[soalId]', 'A')
+            DB --> Service: Kunci jawaban tersimpan
+        end
+        
+        Service -> Service: Kalkulasi XP Creator\n(30 XP + 5 XP per soal)
+        Service -> DB: UPDATE Pengguna SET\nxpCreator = xpCreator + 80,\ntotalXP = totalXP + 80\nWHERE idAkun = '[userId]'
+        DB --> Service: XP UPDATE success
+        Service -> DB: COMMIT TRANSACTION
+        DB --> Service: Transaction committed
+        deactivate DB
+        Service --> Controller: { success: true,\nkuisId: X, xpGained: 80 }
+        Controller --> API: Response 201 Created
+        API --> UI: Response sukses
+        UI --> User: Tampilkan notifikasi\n"Kuis berhasil dibuat!\n+80 XP Creator"
+        UI --> User: Redirect ke daftar kuis
+    else Data tidak valid
+        Service --> Controller: { success: false,\nerror: "Kuis tidak valid" }
+        Controller --> API: Response 400 Bad Request
+        API --> UI: Error response
+        UI --> User: Tampilkan error,\nkuis tidak disimpan
+    end
+    
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    
+else Validasi gagal
+    UI --> User: Tampilkan error validasi\n(misal: "Minimal 1 soal",\n"Soal #X belum punya\njawaban benar")
+end
+
+deactivate UI
+
+== Alternate Flow A - Edit Kuis ==
+
+User -> UI: Pilih kuis dan klik "Edit"
+activate UI
+UI -> API: GET /api/kuis/:id/edit
+activate API
+API -> Controller: getKuisForEdit(id)
+activate Controller
+Controller -> Service: checkOwnershipAndGetData(id, userId)
+activate Service
+Service -> DB: SELECT * FROM Kuis\nWHERE idKuis = '[id]'\nAND idCreator = '[userId]'
+activate DB
+DB --> Service: Return data kuis
+deactivate DB
+
+alt User adalah pembuat
+    Service -> DB: SELECT * FROM Soal\nWHERE idKuis = '[id]'\nORDER BY urutan
+    activate DB
+    DB --> Service: Return soal-soal\ndengan kunci jawaban
+    deactivate DB
+    Service --> Controller: { success: true, data: {...} }
+    Controller --> API: Response 200 OK
+    API --> UI: Data lengkap
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    UI --> User: Tampilkan editor dengan\ndata kuis dan soal existing
+    User -> UI: Mengubah judul, aturan,\natau soal (tambah/edit/hapus)
+    User -> UI: Klik "Simpan Perubahan"
+    UI -> API: PUT /api/kuis/:id
+    activate API
+    API -> Controller: updateKuis(id)
+    activate Controller
+    Controller -> Service: updateKuis(id, data, userId)
+    activate Service
+    Service -> DB: BEGIN TRANSACTION
+    activate DB
+    Service -> DB: UPDATE Kuis SET ...\nWHERE idKuis = '[id]'
+    DB --> Service: Kuis updated
+    Service -> DB: DELETE FROM Soal\nWHERE idKuis = '[id]'\n(hapus soal lama)
+    DB --> Service: Soal lama terhapus
+    Service -> DB: INSERT soal-soal baru
+    DB --> Service: Soal baru tersimpan
+    Service -> DB: UPDATE Pengguna SET\nxpCreator = xpCreator + 10\n(lebih sedikit untuk edit)
+    DB --> Service: XP updated
+    Service -> DB: COMMIT TRANSACTION
+    DB --> Service: Transaction committed
+    deactivate DB
+    Service --> Controller: { success: true, xpGained: 10 }
+    Controller --> API: Response 200 OK
+    API --> UI: Response sukses
+    deactivate Service
+    deactivate Controller
+    deactivate API
+    UI --> User: Tampilkan notifikasi\n"Kuis berhasil diupdate\n+10 XP"
+else User bukan pembuat
+    Service --> Controller: { success: false,\nerror: "Unauthorized" }
+    deactivate Service
+    Controller --> API: Response 403 Forbidden
+    deactivate Controller
+    API --> UI: Error
+    deactivate API
+    UI --> User: Tampilkan error\n"Anda tidak memiliki akses"
+end
+
+deactivate UI
+
+== Alternate Flow B - Hapus Kuis ==
+
+User -> UI: Pilih kuis dan klik "Hapus"
+activate UI
+UI --> User: Tampilkan konfirmasi\n"Yakin hapus kuis?\nSemua soal dan hasil\nakan terhapus"
+User -> UI: Klik "Ya, Hapus"
+UI -> API: DELETE /api/kuis/:id
+activate API
+API -> Controller: deleteKuis(id)
+activate Controller
+Controller -> Service: deleteKuis(id, userId)
+activate Service
+Service -> DB: DELETE FROM Kuis\nWHERE idKuis = '[id]'\nAND idCreator = '[userId]'\n(cascade delete ke Soal\ndan KunciJawaban)
+activate DB
+DB --> Service: DELETE success
+deactivate DB
+Service --> Controller: { success: true }
+Controller --> API: Response 200 OK
+API --> UI: Response sukses
+deactivate Service
+deactivate Controller
+deactivate API
+UI --> User: Tampilkan notifikasi\n"Kuis berhasil dihapus"
+UI -> UI: Update daftar kuis
+deactivate UI
+
+== Alternate: Preview Kuis ==
+
+note over User, UI
+  User bisa klik "Preview Kuis"
+  untuk melihat simulasi kuis
+  seperti yang dilihat learner
+  sebelum menyimpan
+end note
+
+@enduml
