@@ -1,0 +1,148 @@
+@startuml UC-11-Kelola-Kuis
+|Users (Creator)|
+start
+:Akses menu "Kelola Kuis";
+
+|Sistem|
+:Tampilkan daftar kuis pengguna;
+
+|Users (Creator)|
+split
+  :Klik "Buat Kuis Baru";
+  |Sistem|
+  :Tampilkan form kuis;
+  |Users (Creator)|
+  :Mengisi judul kuis;
+  
+  fork
+    :Memilih materi terkait (dropdown);
+  fork again
+    :Skip (kuis standalone);
+  end fork
+  
+  :Menulis aturan/instruksi (Markdown);
+  :Mengatur batas waktu (menit);
+  :Mengatur bobot poin per soal;
+  :Klik "Lanjut ke Soal";
+  
+  |Sistem|
+  :Tampilkan editor soal;
+  
+  |Users (Creator)|
+  repeat
+    :Menyusun soal dalam Markdown;
+    :Menambahkan pilihan jawaban (A,B,C,D);
+    :Menandai jawaban benar;
+    
+    if (Tambah soal lagi?) then (Ya)
+      :Klik "Tambah Soal";
+    else (Tidak)
+      :Klik "Selesai";
+    endif
+  repeat while (Tambah soal?) is (Ya)
+  ->Tidak;
+  
+  fork
+    :Klik "Preview Kuis";
+    |Sistem|
+    :Tampilkan simulasi kuis;
+    |Users (Creator)|
+    :Mencoba mengerjakan;
+    if (Perlu perbaikan?) then (Ya)
+      :Kembali ke editor;
+    else (Tidak)
+      :Lanjut simpan;
+    endif
+  fork again
+    :Langsung lanjut simpan;
+  end fork
+  
+  |Sistem|
+  :Menerima payload kuis lengkap;
+  :Validasi format dan kelengkapan;
+  
+  if (Valid?) then (Ya)
+    if (Min 1 soal & semua punya jawaban benar?) then (Ya)
+      if (Batas waktu 1-180 menit?) then (Ya)
+        :INSERT ke tabel Kuis;
+        
+        if (Insert berhasil?) then (Ya)
+          :INSERT soal-soal ke tabel Soal;
+          
+          if (Insert soal berhasil?) then (Ya)
+            :INSERT kunci jawaban;
+            :Hitung XP Creator (30 + 5 per soal);
+            :UPDATE xpCreator dan totalXP;
+            :Tampil notifikasi "+XP Creator";
+            |Users (Creator)|
+            :Diarahkan ke daftar/preview kuis;
+            stop
+          else (Tidak)
+            :Rollback semua (hapus kuis);
+            :Tampil error "Gagal menyimpan soal";
+            |Users (Creator)|
+            stop
+          endif
+        else (Tidak)
+          :Tampil error "Gagal menyimpan kuis";
+          |Users (Creator)|
+          stop
+        endif
+      else (Tidak)
+        :Tampil error "Waktu harus 1-180 menit";
+        |Users (Creator)|
+        stop
+      endif
+    else (Tidak)
+      :Tampil error "Soal tidak valid";
+      |Users (Creator)|
+      stop
+    endif
+  else (Tidak)
+    :Tampil error validasi;
+    |Users (Creator)|
+    stop
+  endif
+
+split again
+  |Users (Creator)|
+  :Pilih kuis, klik "Edit";
+  |Sistem|
+  :Periksa kepemilikan;
+  
+  if (Pembuat kuis?) then (Ya)
+    :Tampilkan editor dengan data lama;
+    |Users (Creator)|
+    :Ubah judul/aturan/waktu/soal;
+    :Klik "Simpan Perubahan";
+    |Sistem|
+    :UPDATE tabel Kuis, Soal, KunciJawaban;
+    :Beri XP Creator (+10 XP);
+    :Tampil "Kuis berhasil diupdate";
+    |Users (Creator)|
+    stop
+  else (Tidak)
+    :Tampil "Tidak punya akses";
+    |Users (Creator)|
+    stop
+  endif
+
+split again
+  |Users (Creator)|
+  :Pilih kuis, klik "Hapus";
+  |Sistem|
+  :Periksa kepemilikan;
+  :Tampil konfirmasi "Yakin hapus?";
+  |Users (Creator)|
+  :Klik "Ya, Hapus";
+  |Sistem|
+  :DELETE dari Kuis (cascade ke Soal);
+  :Hapus/set deleted riwayat pengerjaan;
+  :Kurangi xpCreator (opsional);
+  :Tampil "Kuis berhasil dihapus";
+  :Update daftar kuis;
+  |Users (Creator)|
+  stop
+end split
+
+@enduml

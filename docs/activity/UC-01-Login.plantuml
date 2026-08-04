@@ -1,0 +1,67 @@
+@startuml UC-01-Login
+|Users/Admin|
+start
+:Membuka halaman login;
+
+split
+  :Memilih login manual;
+  :Memasukkan email dan password;
+  |Sistem|
+  :Menerima kredensial;
+  :Validasi data (SELECT dari Akun);
+  
+  if (Email dan password valid?) then (Ya)
+    if (statusAktif = true?) then (Ya)
+      :Verifikasi password hash;
+      :Generate token JWT;
+      :Buat sesi;
+      |Users/Admin|
+      :Diarahkan ke halaman Home;
+      stop
+    else (Tidak)
+      |Users/Admin|
+      :Tampil pesan "Akun dinonaktifkan";
+      stop
+    endif
+  else (Tidak)
+    |Users/Admin|
+    :Tampil error "Kredensial salah";
+    stop
+  endif
+
+split again
+  |Users/Admin|
+  :Klik "Login via Google";
+  |Google Auth|
+  :Proses autentikasi Google;
+  
+  if (Autentikasi berhasil?) then (Ya)
+    :Kembalikan token ke sistem;
+    |Sistem|
+    :Verifikasi token JWT Google;
+    :Cari akun berdasarkan email;
+    
+    if (Akun ditemukan?) then (Ya)
+      :Generate token JWT;
+      :Buat sesi;
+      |Users/Admin|
+      :Diarahkan ke halaman Home;
+      stop
+    else (Tidak)
+      |Users/Admin|
+      :Tampil "Akun belum terdaftar";
+      stop
+    endif
+  else (Tidak)
+    |Users/Admin|
+    :Tampil "Login Google gagal";
+    stop
+  endif
+
+split again
+  |Users/Admin|
+  :Klik "Batal";
+  stop
+end split
+
+@enduml

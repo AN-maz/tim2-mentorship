@@ -1,0 +1,58 @@
+@startuml UC-07-Belajar-Materi
+|Users|
+start
+:Akses halaman detail materi (mode belajar);
+:Membaca dan mempelajari konten;
+:Scroll sampai akhir materi;
+:Klik "Tandai Selesai";
+
+|Sistem|
+:Menerima konfirmasi penyelesaian;
+:Periksa riwayat belajar pengguna;
+
+if (Sudah pernah selesaikan materi?) then (Ya)
+  :Tampil "Sudah menyelesaikan sebelumnya";
+  :Tidak tambah XP;
+  |Users|
+  :Tombol tampil "Sudah Diselesaikan";
+  stop
+else (Tidak)
+  :Hitung XP yang diberikan (misal 10 XP);
+  :INSERT ke tabel RiwayatBelajar;
+  
+  if (Insert berhasil?) then (Ya)
+    :UPDATE xpLearner dan totalXP pengguna;
+    
+    if (Update XP berhasil?) then (Ya)
+      :Periksa apakah naik rank;
+      
+      if (totalXP >= threshold rank baru?) then (Ya)
+        :UPDATE rankPeringkat pengguna;
+        :Tampil notifikasi XP dan naik rank;
+        :Tampil animasi naik rank;
+        |Users|
+        :Lihat notifikasi naik rank;
+        :Tombol jadi "Sudah Diselesaikan";
+        stop
+      else (Tidak)
+        :Tampil notifikasi XP didapat;
+        |Users|
+        :Lihat notifikasi +10 XP;
+        :Tombol jadi "Sudah Diselesaikan";
+        stop
+      endif
+    else (Tidak)
+      :Log error untuk admin;
+      :Tampil "Progress tersimpan, XP akan diupdate";
+      |Users|
+      note right: Background job akan sinkronisasi
+      stop
+    endif
+  else (Tidak)
+    :Tampil error "Gagal menyimpan progress";
+    |Users|
+    stop
+  endif
+endif
+
+@enduml

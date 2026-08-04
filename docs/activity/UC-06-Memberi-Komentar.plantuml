@@ -1,0 +1,93 @@
+@startuml UC-06-Memberi-Komentar
+|Users|
+start
+:Berada di halaman detail materi;
+:Scroll ke bagian komentar;
+:Klik "Tulis Komentar";
+
+|Sistem|
+:Tampilkan textbox komentar;
+
+|Users|
+split
+  :Menulis teks komentar;
+  
+  fork
+    :Klik "Preview";
+    |Sistem|
+    :Tampilkan preview dengan markdown;
+    |Users|
+    :Lihat preview;
+  fork again
+    :Langsung lanjut;
+  end fork
+  
+  :Klik "Kirim";
+  |Sistem|
+  :Menerima data komentar;
+  :Validasi teks (tidak kosong, <= 1000 char);
+  
+  if (Validasi lolos?) then (Ya)
+    if (Tidak ada konten tidak pantas?) then (Ya)
+      :INSERT ke tabel Komentar;
+      
+      if (Insert berhasil?) then (Ya)
+        :Tampil notifikasi "Komentar berhasil";
+        :Render komentar baru;
+        |Users|
+        :Melihat komentar muncul;
+        
+        fork
+          :Mengedit komentar sendiri;
+          |Sistem|
+          :Tampilkan textbox dengan teks lama;
+          |Users|
+          :Ubah teks;
+          :Klik "Simpan Perubahan";
+          |Sistem|
+          :UPDATE komentar;
+          :Tampilkan komentar terupdate;
+        fork again
+          :Menghapus komentar sendiri;
+          |Sistem|
+          :Tampil konfirmasi "Yakin hapus?";
+          |Users|
+          :Klik "Ya";
+          |Sistem|
+          :DELETE dari tabel Komentar;
+          :Komentar hilang;
+        fork again
+          :Selesai;
+        end fork
+        
+        stop
+      else (Tidak)
+        :Tampil error "Gagal mengirim komentar";
+        |Users|
+        stop
+      endif
+    else (Tidak)
+      :Tampil "Konten tidak pantas";
+      |Users|
+      stop
+    endif
+  else (Tidak)
+    if (Komentar kosong?) then (Ya)
+      :Tampil "Komentar tidak boleh kosong";
+    else (Terlalu panjang)
+      :Tampil "Maksimal 1000 karakter";
+    endif
+    |Users|
+    stop
+  endif
+
+split again
+  :Klik "Batal";
+  |Sistem|
+  :Hapus draft komentar;
+  :Tutup textbox;
+  |Users|
+  stop
+end split
+
+@enduml

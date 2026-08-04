@@ -1,0 +1,51 @@
+@startuml UC-04-Mencari-Materi
+|Users|
+start
+:Berada di halaman daftar materi;
+:Klik kolom pencarian;
+:Ketik kata kunci;
+
+split
+  :Tekan "Cari" / Enter;
+  |Sistem|
+  :Menerima kata kunci;
+  
+  if (Kata kunci >= 3 karakter?) then (Ya)
+    :Eksekusi query pencarian ILIKE;
+    
+    if (Ada hasil?) then (Ya)
+      :Tampilkan hasil dengan highlight;
+      :Tampilkan jumlah hasil;
+      |Users|
+      :Melihat hasil pencarian;
+      :Memilih materi (lanjut ke UC-03);
+      stop
+    else (Tidak)
+      :Tampil "Tidak ada materi cocok";
+      :Tampil saran coba kata kunci lain;
+      |Users|
+      stop
+    endif
+  else (Tidak)
+    :Tampil "Minimal 3 karakter";
+    |Users|
+    stop
+  endif
+
+split again
+  :Menghapus semua teks pencarian;
+  |Sistem|
+  :Tampilkan kembali semua materi;
+  |Users|
+  stop
+
+split again
+  :Ketik (real-time search);
+  |Sistem|
+  :Pencarian otomatis (debounced);
+  :Tampilkan hasil dinamis;
+  |Users|
+  stop
+end split
+
+@enduml

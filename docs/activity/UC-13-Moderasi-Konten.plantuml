@@ -1,0 +1,150 @@
+@startuml UC-13-Moderasi-Konten
+|Admin|
+start
+:Akses menu "Kelola Materi / Kuis";
+
+|Sistem|
+:Eksekusi query semua konten;
+note right
+  SELECT * FROM Materi 
+  UNION 
+  SELECT * FROM Kuis
+end note
+:Tampilkan daftar konten;
+
+|Admin|
+fork
+  :Gunakan filter (status/creator/tanggal);
+fork again
+  :Search by judul/konten;
+fork again
+  :Filter "Konten Dilaporkan";
+  |Sistem|
+  :Tampilkan konten dengan laporan;
+  |Admin|
+  :Prioritas moderasi konten banyak laporan;
+end fork
+
+:Mencari dan memilih konten;
+
+|Sistem|
+:Tampilkan preview konten lengkap;
+:Tampilkan detail creator;
+
+|Admin|
+fork
+  if (Konten pernah dimoderasi?) then (Ya)
+    |Sistem|
+    :Tampilkan history moderasi;
+    note right
+      Siapa moderate, kapan, alasan
+    end note
+  endif
+end fork
+
+:Melihat konten;
+:Menentukan tindakan moderasi;
+
+split
+  :Pilih aksi "Sembunyikan";
+  |Sistem|
+  :Tampil dialog konfirmasi;
+  :Tampilkan field "Alasan Moderasi";
+  |Admin|
+  
+  if (Alasan diisi?) then (Ya)
+    :Mengisi alasan moderasi;
+    :Klik "Ya, Sembunyikan";
+    |Sistem|
+    :UPDATE SET status_publik = false;
+    :Set alasan_moderate dan moderated_by;
+    
+    if (Update berhasil?) then (Ya)
+      :Catat ke ModerationLog;
+      :Kirim notifikasi ke creator;
+      :Tampil "Konten berhasil disembunyikan";
+      :Update daftar konten;
+      |Admin|
+      note right: Konten tidak muncul di pencarian publik
+      stop
+    else (Tidak)
+      :Tampil error "Gagal moderasi";
+      |Admin|
+      stop
+    endif
+  else (Tidak)
+    |Sistem|
+    :Tampil warning "Alasan harus diisi";
+    |Admin|
+    stop
+  endif
+
+split again
+  |Admin|
+  :Pilih aksi "Hapus Paksa";
+  |Sistem|
+  :Tampil peringatan "HAPUS PERMANEN";
+  note right
+    Semua data (riwayat, komentar, 
+    rating) akan terhapus
+  end note
+  |Admin|
+  :Mengisi alasan;
+  :Ketik "HAPUS" untuk konfirmasi;
+  :Klik "Ya, Hapus Permanen";
+  |Sistem|
+  
+  if (Ada pengguna sedang gunakan?) then (Ya)
+    :Tampil peringatan "X pengguna sedang mengerjakan";
+    |Admin|
+    if (Tetap lanjut?) then (Ya)
+      |Sistem|
+      :Handle gracefully (simpan progress);
+    else (Tidak)
+      |Admin|
+      stop
+    endif
+  endif
+  
+  |Sistem|
+  :DELETE dari tabel Materi/Kuis;
+  
+  fork
+    :Hapus file aset dari AWS S3;
+    
+    if (Hapus S3 berhasil?) then (Ya)
+    else (Tidak)
+      :Log error untuk cleanup manual;
+      :Background job retry;
+    endif
+  fork again
+    :Hapus/soft-delete riwayat belajar;
+  end fork
+  
+  :Catat ke ModerationLog (action=delete);
+  :Kirim notifikasi ke creator;
+  :Kurangi XP creator (opsional);
+  :Tampil "Konten berhasil dihapus";
+  |Admin|
+  stop
+
+split again
+  |Admin|
+  :Pilih aksi "Pulihkan / Approve";
+  note right: Untuk konten yang disembunyikan
+  |Sistem|
+  :Tampil konfirmasi;
+  |Admin|
+  :Klik "Ya, Pulihkan";
+  |Sistem|
+  :UPDATE SET status_publik = true;
+  :Set alasan_moderate = NULL;
+  :Catat ke ModerationLog (action=approve);
+  :Kirim notifikasi "Konten disetujui";
+  :Tampil "Konten berhasil dipulihkan";
+  |Admin|
+  note right: Konten kembali muncul di publik
+  stop
+end split
+
+@enduml

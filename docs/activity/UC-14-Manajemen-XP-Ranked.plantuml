@@ -1,0 +1,165 @@
+@startuml UC-14-Manajemen-XP-Ranked
+|Admin|
+start
+:Akses menu "Manajemen XP & Ranked";
+
+|Sistem|
+:Tampilkan dashboard konfigurasi;
+:Tampilkan statistik leaderboard;
+:Tampilkan form konfigurasi parameter XP;
+note right
+  - XP per baca materi
+  - XP per selesai kuis
+  - XP per upload materi
+  - XP per buat kuis
+  - Multiplier
+end note
+
+|Admin|
+split
+  :Pilih aksi "Ubah Bobot XP";
+  :Menyesuaikan nilai parameter;
+  :Klik "Preview Impact";
+  |Sistem|
+  :Tampilkan simulasi dampak;
+  :Estimasi dampak pada leaderboard;
+  |Admin|
+  
+  if (Parameter valid 0-1000?) then (Ya)
+    if (Puas dengan preview?) then (Ya)
+      :Klik "Simpan Konfigurasi";
+      |Sistem|
+      :Simpan parameter ke SystemConfig;
+      
+      if (Simpan berhasil?) then (Ya)
+        :Catat ke ConfigChangeLog;
+        note right
+          admin_id, parameter, 
+          old_value, new_value
+        end note
+        :Tampil "Konfigurasi berhasil diperbarui";
+        |Admin|
+        note right: Berlaku untuk aktivitas berikutnya
+        stop
+      else (Tidak)
+        :Tampil error "Gagal menyimpan";
+        |Admin|
+        stop
+      endif
+    else (Tidak)
+      :Klik "Batal";
+      note right: Kembali menyesuaikan parameter
+      stop
+    endif
+  else (Tidak)
+    |Sistem|
+    :Tampil validasi "Nilai harus 0-1000";
+    |Admin|
+    stop
+  endif
+
+split again
+  |Admin|
+  :Pilih aksi "Reset Peringkat (Season Baru)";
+  |Sistem|
+  :Tampilkan info season saat ini;
+  :Tampil peringatan "Reset akan arsipkan pemenang";
+  |Admin|
+  :Mengisi nama season baru;
+  :Klik konfirmasi "Ya, Mulai Season Baru";
+  |Sistem|
+  :Mulai database transaction;
+  
+  if (Ada pengguna online?) then (Ya)
+    :Simpan progress aktivitas ongoing;
+    note right: XP aktivitas ongoing masuk season baru
+  endif
+  
+  :INSERT INTO SeasonWinners (arsipkan pemenang);
+  
+  if (Arsip berhasil?) then (Ya)
+    :UPDATE Pengguna SET XP = 0, rank = Unranked;
+    
+    if (Update berhasil?) then (Ya)
+      :INSERT metadata season baru;
+      :Commit transaction;
+      :Kirim notifikasi broadcast ke semua pengguna;
+      
+      if (Broadcast berhasil?) then (Ya)
+        :Tampil "Season berhasil direset";
+        |Admin|
+        stop
+      else (Tidak)
+        :Log failed notification;
+        :Tampil "Season direset, notifikasi gagal";
+        |Admin|
+        note right: Admin dapat kirim manual
+        stop
+      endif
+    else (Tidak)
+      :Rollback transaction;
+      :Tampil error "Gagal reset season";
+      |Admin|
+      stop
+    endif
+  else (Tidak)
+    :Rollback transaction;
+    :Tampil error "Gagal arsipkan pemenang";
+    |Admin|
+    stop
+  endif
+
+split again
+  |Admin|
+  :Pilih aksi "Rekalkulasi XP Semua Pengguna";
+  |Sistem|
+  :Tampil warning "Proses lama";
+  |Admin|
+  :Klik "Mulai Rekalkulasi";
+  |Sistem|
+  :Jalankan background job;
+  
+  repeat
+    :Iterate pengguna berikutnya;
+    :Hitung ulang dari RiwayatBelajar;
+    note right
+      SUM(xpDidapat WHERE tipeKonten)
+      untuk xpLearner dan xpCreator
+    end note
+    
+    if (Ditemukan inkonsistensi?) then (Ya)
+      :Log inkonsistensi ke report;
+    endif
+    
+    :UPDATE Pengguna dengan hasil;
+    :Update progress bar;
+  repeat while (Masih ada pengguna?) is (Ya)
+  ->Tidak;
+  
+  :Tampil "Rekalkulasi selesai";
+  :Tampil laporan inkonsistensi (jika ada);
+  |Admin|
+  stop
+
+split again
+  |Admin|
+  :Pilih aksi "Kelola Rank Tiers";
+  |Sistem|
+  :Tampilkan daftar rank tier;
+  note right
+    Unranked, Bronze, Silver, 
+    Gold, Platinum, Diamond
+    dengan threshold masing-masing
+  end note
+  |Admin|
+  :Mengubah threshold rank;
+  :Klik "Simpan Threshold";
+  |Sistem|
+  :Simpan konfigurasi baru;
+  :Trigger rekalkulasi rank semua pengguna;
+  :Tampil "Rank threshold berhasil diupdate";
+  |Admin|
+  stop
+end split
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml UC-03-Melihat-Materi
+|Users|
+start
+:Akses halaman daftar materi;
+
+|Sistem|
+:Eksekusi query SELECT materi publik;
+
+if (Ada materi?) then (Ya)
+  :Tampilkan daftar materi;
+  |Users|
+  :Pilih dan klik judul materi;
+  |Sistem|
+  :Terima request detail materi;
+  :Ambil data berdasarkan idMateri;
+  
+  if (Materi ditemukan?) then (Ya)
+    :Increment totalDilihat;
+    :Render konten markdown ke HTML;
+    
+    if (Rendering berhasil?) then (Ya)
+      :Tampilkan halaman detail materi;
+      |Users|
+      :Membaca materi;
+      
+      fork
+        :Memberi rating (extend UC-05);
+        |Sistem|
+        :Simpan rating;
+        :Kalkulasi ulang ratingRataRata;
+        |Users|
+        :Lihat rating terbaru;
+      fork again
+        :Menulis komentar (extend UC-06);
+        |Sistem|
+        :Simpan komentar;
+        :Tampilkan komentar baru;
+      fork again
+        :Menutup halaman;
+      end fork
+      
+      stop
+    else (Tidak)
+      |Users|
+      :Tampil "Konten mengalami masalah format";
+      stop
+    endif
+  else (Tidak)
+    |Users|
+    :Tampil error "Materi tidak ditemukan";
+    :Kembali ke daftar materi;
+    stop
+  endif
+else (Tidak)
+  :Tampil "Belum ada materi tersedia";
+  |Users|
+  stop
+endif
+
+@enduml
