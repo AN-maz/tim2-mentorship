@@ -3,94 +3,273 @@ skinparam classAttributeIconSize 0
 skinparam monochrome false
 skinparam roundcorner 10
 
-' --- KELAS SUPER (GENERALIZATION) ---
+title Class Diagram - LMS Gamifikasi (Updated)
+
+' ==================== KELAS SUPER (GENERALIZATION) ====================
 class Akun {
-  - idAkun: UUID [1]
+  - idAkun: UUID [1] <<PK>>
   - namaLengkap: String [1]
-  - email: String [1]
-  - kataSandiHash: String [1]
+  - email: String [1] <<unique>>
+  - kataSandiHash: String [0..1]
+  - googleId: String [0..1]
   - tanggalDaftar: Date [1]
   - statusAktif: Boolean [1] = true
+  - alasanSuspend: String [0..1]
+  - role: String [1]
   + login(): Boolean
   + logout(): void
   + updateProfil(): void
 }
 
-' --- KELAS SUB (TURUNAN DARI AKUN) ---
+' ==================== KELAS SUB (TURUNAN DARI AKUN) ====================
 class Pengguna {
   - xpLearner: Integer [1] = 0
   - xpCreator: Integer [1] = 0
   - totalXP: Integer [1] = 0
-  - rankPeringkat: String [0..1]
+  - rankPeringkat: String [1] = 'Unranked'
   + bacaMateri(idMateri: Integer): void
   + ikutiKuis(idKuis: Integer): void
   + unggahMateri(data: Materi): void
   + buatKuis(data: Kuis): void
   + getDetailRank(): String
+  + beriRating(idMateri: Integer, nilai: Integer): void
+  + beriKomentar(idMateri: Integer, teks: String): void
 }
 
 class Admin {
   - tingkatAkses: String [1]
   - kodePegawai: String [1]
   + kelolaPengguna(): void
-  + moderasiMateri(): void
+  + moderasiKonten(): void
   + kalkulasiUlangXP(): void
   + kelolaLeaderboard(): void
+  + resetSeason(): void
+  + updateXPConfig(): void
 }
 
 ' Relasi Generalization
 Akun <|-- Pengguna : <<Generalization>>
 Akun <|-- Admin : <<Generalization>>
 
-' --- KELAS ENTITAS KONTEN ---
+' ==================== KELAS ENTITAS KONTEN ====================
 class Materi {
-  - idMateri: Integer [1]
+  - idMateri: Integer [1] <<PK>>
   - judulMateri: String [1]
-  - kontenMarkdown: String [1]
-  - idPenulis: UUID [1]
+  - kontenMarkdown: Text [1]
+  - idPenulis: UUID [1] <<FK>>
   - tanggalUnggah: Date [1]
+  - tanggalEdit: Date [0..1]
   - totalDilihat: Integer [1] = 0
-  - ratingRataRata: Float [0..1]
+  - ratingRataRata: Float [0..1] = 0
+  - status_publik: Boolean [1] = true
+  - alasan_moderate: String [0..1]
+  - moderated_by: UUID [0..1] <<FK>>
+  - moderated_at: Date [0..1]
+  - fileUrls: Text [0..1]
   + renderMarkdown(): String
   + tambahMateri(): void
   + editMateri(): void
   + hapusMateri(): void
-  + beriRating(nilai: Float): void
+  + incrementView(): void
 }
 
 class Kuis {
-  - idKuis: Integer [1]
+  - idKuis: Integer [1] <<PK>>
   - judulKuis: String [1]
-  - idMateriTerkait: Integer [0..1]
-  - aturanMarkdown: String [1]
+  - idMateriTerkait: Integer [0..1] <<FK>>
+  - idCreator: UUID [1] <<FK>>
+  - aturanMarkdown: Text [1]
   - batasWaktuMenit: Integer [1]
   - poinXPDefault: Integer [1]
+  - tanggalBuat: Date [1]
+  - status_publik: Boolean [1] = true
+  - alasan_moderate: String [0..1]
+  - moderated_by: UUID [0..1] <<FK>>
   + tambahKuis(): void
   + editKuis(): void
   + hapusKuis(): void
   + kalkulasiPoin(jawabanBenar: Integer): Integer
 }
 
+class Soal {
+  - idSoal: Integer [1] <<PK>>
+  - idKuis: Integer [1] <<FK>>
+  - pertanyaanMarkdown: Text [1]
+  - opsiA: String [1]
+  - opsiB: String [1]
+  - opsiC: String [1]
+  - opsiD: String [1]
+  - urutan: Integer [1]
+  + tambahSoal(): void
+  + editSoal(): void
+}
+
+class KunciJawaban {
+  - idKunciJawaban: Integer [1] <<PK>>
+  - idSoal: Integer [1] <<FK>>
+  - jawabanBenar: Char [1]
+  + validasiJawaban(jawaban: Char): Boolean
+}
+
 class RiwayatBelajar {
-  - idRiwayat: Integer [1]
-  - idPengguna: UUID [1]
+  - idRiwayat: Integer [1] <<PK>>
+  - idPengguna: UUID [1] <<FK>>
   - idKonten: Integer [1]
-  - tipeKonten: String [1] 
+  - tipeKonten: String [1]
   - tanggalSelesai: Date [1]
   - xpDidapat: Integer [1]
+  - skor: Integer [0..1]
   + catatRiwayatBelajar(): void
   + totalXpBulanIni(): Integer
 }
 
-' --- RELASI ASSOCIATION & AGGREGATION ---
-' Seorang Pengguna dapat membuat banyak Materi/Kuis
+' ==================== KELAS INTERAKSI ====================
+class Rating {
+  - idRating: Integer [1] <<PK>>
+  - idMateri: Integer [1] <<FK>>
+  - idPengguna: UUID [1] <<FK>>
+  - nilaiRating: Integer [1]
+  - tanggal: Date [1]
+  + tambahRating(): void
+  + updateRating(): void
+}
+
+class Komentar {
+  - idKomentar: Integer [1] <<PK>>
+  - idMateri: Integer [1] <<FK>>
+  - idPengguna: UUID [1] <<FK>>
+  - teksKomentar: Text [1]
+  - tanggal: Date [1]
+  - tanggalEdit: Date [0..1]
+  + tambahKomentar(): void
+  + editKomentar(): void
+  + hapusKomentar(): void
+}
+
+' ==================== KELAS GAMIFIKASI & SISTEM ====================
+class SystemConfig {
+  - idConfig: Integer [1] <<PK>>
+  - config_type: String [1]
+  - config_value: JSON [1]
+  - updated_at: Date [1]
+  - updated_by: UUID [1] <<FK>>
+  + getConfig(type: String): JSON
+  + updateConfig(type: String, value: JSON): void
+}
+
+class Season {
+  - idSeason: Integer [1] <<PK>>
+  - season_name: String [1]
+  - start_date: Date [1]
+  - end_date: Date [0..1]
+  - status: String [1]
+  + startNewSeason(): void
+  + endSeason(): void
+}
+
+class SeasonWinners {
+  - idWinner: Integer [1] <<PK>>
+  - idSeason: Integer [1] <<FK>>
+  - idPengguna: UUID [1] <<FK>>
+  - namaLengkap: String [1]
+  - totalXP: Integer [1]
+  - xpLearner: Integer [1]
+  - xpCreator: Integer [1]
+  - rankPeringkat: String [1]
+  - end_date: Date [1]
+}
+
+' ==================== KELAS AUDIT & LOG ====================
+class ModerationLog {
+  - idLog: Integer [1] <<PK>>
+  - admin_id: UUID [1] <<FK>>
+  - content_id: Integer [1]
+  - content_type: String [1]
+  - action: String [1]
+  - reason: Text [0..1]
+  - timestamp: Date [1]
+  + logModeration(): void
+}
+
+class AuditLog {
+  - idLog: Integer [1] <<PK>>
+  - admin_id: UUID [1] <<FK>>
+  - action: String [1]
+  - target_user_id: UUID [0..1] <<FK>>
+  - details: Text [0..1]
+  - timestamp: Date [1]
+  + logAction(): void
+}
+
+class ConfigChangeLog {
+  - idLog: Integer [1] <<PK>>
+  - admin_id: UUID [1] <<FK>>
+  - parameter_changed: String [1]
+  - old_value: String [1]
+  - new_value: String [1]
+  - timestamp: Date [1]
+  + logConfigChange(): void
+}
+
+' ==================== RELASI ASSOCIATION ====================
+
+' Pengguna sebagai Creator
 Pengguna "1" -- "0..*" Materi : Mengunggah >
 Pengguna "1" -- "0..*" Kuis : Membuat >
 
-' Pengguna memiliki riwayat aktivitas belajar
+' Pengguna sebagai Learner
 Pengguna "1" -- "0..*" RiwayatBelajar : Memiliki >
+Pengguna "1" -- "0..*" Rating : Memberi >
+Pengguna "1" -- "0..*" Komentar : Menulis >
 
-' Materi dapat memiliki kuis terkait
+' Materi dan interaksinya
+Materi "1" -- "0..*" Rating : Menerima >
+Materi "1" -- "0..*" Komentar : Memiliki >
 Materi "1" -- "0..*" Kuis : Memiliki referensi >
+
+' Kuis dan komponennya
+Kuis "1" *-- "1..*" Soal : Terdiri dari >
+Soal "1" -- "1" KunciJawaban : Memiliki >
+
+' Admin dan log aktivitasnya
+Admin "1" -- "0..*" ModerationLog : Melakukan >
+Admin "1" -- "0..*" AuditLog : Mencatat >
+Admin "1" -- "0..*" ConfigChangeLog : Mengubah >
+Admin "1" -- "0..*" SystemConfig : Mengelola >
+
+' Season dan pemenang
+Season "1" -- "0..*" SeasonWinners : Mengarsipkan >
+Pengguna "1" -- "0..*" SeasonWinners : Tercatat sebagai >
+
+' Moderasi konten
+Admin "0..1" -- "0..*" Materi : Moderasi >
+Admin "0..1" -- "0..*" Kuis : Moderasi >
+
+note right of Akun
+  Superclass untuk Pengguna dan Admin.
+  Mendukung login manual (email+password)
+  dan Google Auth (googleId).
+end note
+
+note right of RiwayatBelajar
+  Mencatat aktivitas belajar
+  untuk tracking XP.
+  tipeKonten: 'materi' atau 'kuis'
+  skor: hanya untuk kuis
+end note
+
+note bottom of SystemConfig
+  Menyimpan konfigurasi sistem:
+  - xp_settings (bobot XP per aktivitas)
+  - rank_thresholds (threshold untuk rank)
+  Format: JSON
+end note
+
+note bottom of Season
+  Sistem season untuk kompetisi periodic.
+  status: 'active' atau 'ended'
+  Saat reset, XP semua user ke 0
+  dan pemenang diarsipkan.
+end note
 
 @enduml
