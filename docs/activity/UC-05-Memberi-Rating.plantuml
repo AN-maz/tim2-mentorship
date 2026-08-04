@@ -1,0 +1,61 @@
+@startuml UC-05-Memberi-Rating
+|Users|
+start
+:Berada di halaman detail materi;
+:Melihat komponen rating bintang;
+:Klik bintang untuk rating (1-5);
+
+|Sistem|
+:Menerima input rating;
+
+if (Rating antara 1-5?) then (Ya)
+  :Periksa rating sebelumnya;
+  
+  if (Sudah pernah rating?) then (Ya)
+    :Tampil konfirmasi "Ubah rating?";
+    |Users|
+    if (Pilih "Ya"?) then (Ya)
+      |Sistem|
+      :UPDATE rating di tabel Rating;
+      :Kalkulasi ulang ratingRataRata;
+      
+      if (Kalkulasi berhasil?) then (Ya)
+        :UPDATE ratingRataRata di Materi;
+        :Tampil notifikasi "Rating berhasil";
+        |Users|
+        :Lihat rating terbaru;
+        stop
+      else (Tidak)
+        :Log error untuk admin;
+        :Tampil notifikasi sukses;
+        |Users|
+        note right: Background job akan kalkulasi nanti
+        stop
+      endif
+    else (Tidak)
+      |Users|
+      stop
+    endif
+  else (Tidak)
+    :INSERT rating baru ke tabel;
+    
+    if (Insert berhasil?) then (Ya)
+      :Kalkulasi ulang ratingRataRata;
+      :UPDATE ratingRataRata di Materi;
+      :Tampil notifikasi "Rating berhasil";
+      |Users|
+      :Lihat rating terbaru;
+      stop
+    else (Tidak)
+      :Tampil error "Gagal menyimpan rating";
+      |Users|
+      stop
+    endif
+  endif
+else (Tidak)
+  :Tampil error "Rating harus 1-5 bintang";
+  |Users|
+  stop
+endif
+
+@enduml

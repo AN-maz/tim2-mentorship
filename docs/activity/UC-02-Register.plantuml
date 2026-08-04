@@ -1,0 +1,73 @@
+@startuml UC-02-Register
+|Users|
+start
+:Membuka halaman registrasi;
+
+split
+  :Memilih registrasi manual;
+  :Mengisi form (Nama, Email, Password);
+  :Klik "Daftar";
+  |Sistem|
+  :Menerima data input;
+  :Validasi format (email, password);
+  
+  if (Format valid?) then (Ya)
+    :Enkripsi password (bcrypt);
+    :Cek ketersediaan email di database;
+    
+    if (Email belum terdaftar?) then (Ya)
+      :INSERT data ke tabel Pengguna;
+      :Inisialisasi XP (xpLearner=0, xpCreator=0);
+      :Set statusAktif = true;
+      |Users|
+      :Tampil notifikasi "Registrasi berhasil";
+      :Diarahkan ke halaman login;
+      stop
+    else (Tidak)
+      |Users|
+      :Tampil error "Email sudah digunakan";
+      stop
+    endif
+  else (Tidak)
+    |Users|
+    :Tampil error "Format tidak valid";
+    stop
+  endif
+
+split again
+  |Users|
+  :Klik "Daftar via Google";
+  |Google Auth|
+  :Proses autentikasi Google;
+  
+  if (Autentikasi berhasil?) then (Ya)
+    :Kembalikan data profil (nama, email);
+    |Sistem|
+    :Menerima data dari Google;
+    :Cek ketersediaan email;
+    
+    if (Email belum terdaftar?) then (Ya)
+      :INSERT data tanpa password hash;
+      :Inisialisasi XP;
+      |Users|
+      :Tampil notifikasi "Registrasi berhasil";
+      :Diarahkan ke halaman login;
+      stop
+    else (Tidak)
+      |Users|
+      :Tampil "Email sudah terdaftar";
+      stop
+    endif
+  else (Tidak)
+    |Users|
+    :Tampil "Registrasi Google gagal";
+    stop
+  endif
+
+split again
+  |Users|
+  :Klik "Batal";
+  stop
+end split
+
+@enduml

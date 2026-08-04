@@ -1,0 +1,142 @@
+@startuml UC-12-Mengelola-Users
+|Admin|
+start
+:Akses menu "Kelola Users";
+
+|Sistem|
+:Eksekusi query SELECT semua pengguna;
+:Tampilkan tabel daftar pengguna;
+note right
+  Kolom: ID, Nama, Email, Role, 
+  Status Aktif, Tanggal Daftar, Total XP
+end note
+
+|Admin|
+fork
+  :Gunakan filter (by role/status);
+fork again
+  :Search by nama/email;
+end fork
+
+:Memilih pengguna tertentu;
+
+|Sistem|
+:Tampilkan detail pengguna;
+:Tampilkan menu aksi;
+
+|Admin|
+split
+  :Pilih aksi "Edit Role";
+  |Sistem|
+  :Tampilkan dialog pilihan role;
+  |Admin|
+  
+  if (Role valid?) then (Ya)
+    :Memilih role baru (User/Admin);
+    :Klik "Simpan";
+    |Sistem|
+    :UPDATE tabel Akun (SET role);
+    
+    if (Update berhasil?) then (Ya)
+      :Catat ke AuditLog;
+      :Tampil notifikasi "Role berhasil diubah";
+      :Refresh daftar pengguna;
+      |Admin|
+      :Melihat perubahan;
+      stop
+    else (Tidak)
+      :Tampil error "Gagal ubah role";
+      |Admin|
+      stop
+    endif
+  else (Tidak)
+    |Sistem|
+    :Tampil "Role tidak valid";
+    |Admin|
+    stop
+  endif
+
+split again
+  |Admin|
+  :Pilih aksi "Suspend Akun";
+  |Sistem|
+  :Tampil konfirmasi "Yakin suspend?";
+  |Admin|
+  :Mengisi alasan suspend;
+  :Klik "Ya, Suspend";
+  |Sistem|
+  
+  if (Target bukan admin tinggi?) then (Ya)
+    :UPDATE SET statusAktif = false;
+    :Catat ke AuditLog;
+    :Kirim notifikasi email (opsional);
+    :Tampil "Akun berhasil disuspend";
+    |Admin|
+    note right: Pengguna tidak bisa login lagi
+    stop
+  else (Tidak)
+    :Tampil "Tidak punya akses";
+    |Admin|
+    stop
+  endif
+
+split again
+  |Admin|
+  :Pilih aksi "Hapus Akun";
+  |Sistem|
+  :Tampil peringatan "HAPUS PERMANEN";
+  |Admin|
+  :Ketik "HAPUS" untuk konfirmasi;
+  :Klik "Ya, Hapus Permanen";
+  |Sistem|
+  :DELETE cascade dari Akun;
+  
+  if (Cascade delete berhasil?) then (Ya)
+    fork
+      :Hapus file S3 terkait;
+    fork again
+      :Hapus Materi, Kuis, Riwayat;
+    end fork
+    :Catat ke AuditLog;
+    :Tampil "Akun berhasil dihapus";
+    :Update daftar pengguna;
+    |Admin|
+    stop
+  else (Tidak)
+    :Rollback transaction;
+    :Tampil error "Gagal menghapus";
+    |Admin|
+    stop
+  endif
+
+split again
+  |Admin|
+  :Pilih aksi "Aktifkan Kembali";
+  note right: Untuk akun suspended
+  |Sistem|
+  :Tampil konfirmasi;
+  |Admin|
+  :Klik "Ya, Aktifkan";
+  |Sistem|
+  :UPDATE SET statusAktif = true;
+  :Catat ke AuditLog;
+  :Tampil "Akun berhasil diaktifkan";
+  |Admin|
+  note right: Pengguna bisa login kembali
+  stop
+
+split again
+  |Admin|
+  :Klik nama pengguna;
+  |Sistem|
+  :Tampilkan halaman detail profil lengkap;
+  note right
+    Statistik XP, materi/kuis dibuat,
+    riwayat aktivitas
+  end note
+  |Admin|
+  :Melihat detail;
+  stop
+end split
+
+@enduml

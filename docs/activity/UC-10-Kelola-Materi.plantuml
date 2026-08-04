@@ -1,0 +1,141 @@
+@startuml UC-10-Kelola-Materi
+|Users (Creator)|
+start
+:Akses menu "Kelola Materi";
+
+|Sistem|
+:Tampilkan daftar materi pengguna;
+
+|Users (Creator)|
+split
+  :Klik "Tambah Materi Baru";
+  |Sistem|
+  :Tampilkan form editor;
+  |Users (Creator)|
+  :Mengisi judul materi;
+  :Menulis konten dalam Markdown;
+  
+  fork
+    :Menyisipkan file/gambar;
+  fork again
+    :Tanpa file pendukung;
+  end fork
+  
+  :Klik "Preview";
+  |Sistem|
+  :Tampilkan hasil render;
+  |Users (Creator)|
+  :Melihat preview;
+  
+  fork
+    :Klik "Simpan";
+    |Sistem|
+    :Menerima payload data;
+    :Validasi struktur Markdown;
+    
+    if (Validasi lolos?) then (Ya)
+      if (Ada file?) then (Ya)
+        fork
+          :Upload file ke AWS S3;
+        fork again
+          :Upload file lain ke S3;
+        end fork
+        :Dapatkan URL dari S3;
+        
+        if (Upload S3 berhasil?) then (Ya)
+          :INSERT ke tabel Materi;
+          
+          if (Insert berhasil?) then (Ya)
+            :Hitung XP Creator (+20 XP);
+            :UPDATE xpCreator dan totalXP;
+            :Tampil notifikasi "+20 XP Creator";
+            |Users (Creator)|
+            :Diarahkan ke daftar/preview materi;
+            stop
+          else (Tidak)
+            :Rollback: hapus file dari S3;
+            :Tampil error "Gagal menyimpan";
+            |Users (Creator)|
+            stop
+          endif
+        else (Tidak)
+          :Tampil error "Gagal upload file";
+          |Users (Creator)|
+          stop
+        endif
+      else (Tidak)
+        :INSERT ke tabel Materi;
+        :UPDATE xpCreator (+20 XP);
+        :Tampil notifikasi "Berhasil ditambahkan";
+        |Users (Creator)|
+        stop
+      endif
+    else (Tidak)
+      :Tampil error "Format Markdown invalid";
+      |Users (Creator)|
+      stop
+    endif
+  fork again
+    :Klik "Simpan sebagai Draft";
+    |Sistem|
+    :Simpan dengan status_publik = false;
+    :Tidak beri XP Creator;
+    :Tampil "Draft tersimpan";
+    |Users (Creator)|
+    stop
+  end fork
+
+split again
+  |Users (Creator)|
+  :Pilih materi, klik "Edit";
+  |Sistem|
+  :Periksa kepemilikan (idPenulis == idPengguna);
+  
+  if (Pemilik materi?) then (Ya)
+    :Tampilkan form editor dengan data lama;
+    |Users (Creator)|
+    :Ubah judul/konten/file;
+    :Klik "Simpan Perubahan";
+    |Sistem|
+    :UPDATE tabel Materi;
+    
+    fork
+      if (Ada file baru?) then (Ya)
+        :Upload file baru ke S3;
+      endif
+    fork again
+      if (Ada file lama dihapus?) then (Ya)
+        :Hapus dari S3;
+      endif
+    end fork
+    
+    :Beri XP Creator (+5 XP untuk edit);
+    :Tampil "Materi berhasil diupdate";
+    |Users (Creator)|
+    stop
+  else (Tidak)
+    :Tampil "Tidak punya akses";
+    |Users (Creator)|
+    stop
+  endif
+
+split again
+  |Users (Creator)|
+  :Pilih materi, klik "Hapus";
+  |Sistem|
+  :Periksa kepemilikan;
+  :Tampil konfirmasi "Yakin hapus?";
+  |Users (Creator)|
+  :Klik "Ya, Hapus";
+  |Sistem|
+  :DELETE dari tabel Materi;
+  :Hapus semua file dari AWS S3;
+  :Hapus/set deleted riwayat belajar;
+  :Kurangi xpCreator (opsional);
+  :Tampil "Materi berhasil dihapus";
+  :Update daftar materi;
+  |Users (Creator)|
+  stop
+end split
+
+@enduml

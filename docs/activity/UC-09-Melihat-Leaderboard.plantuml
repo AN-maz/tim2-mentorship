@@ -1,0 +1,65 @@
+@startuml UC-09-Melihat-Leaderboard
+|Users|
+start
+:Klik menu "Leaderboard / Ranked";
+
+|Sistem|
+:Menerima request halaman leaderboard;
+:Eksekusi query SELECT ranking (ORDER BY totalXP DESC);
+
+if (Ada data ranking?) then (Ya)
+  :Kelompokkan data per kategori;
+  note right
+    - Total XP (Learner + Creator)
+    - Learner Terbaik (by xpLearner)
+    - Creator Terbaik (by xpCreator)
+  end note
+  :Tentukan peringkat setiap pengguna;
+  :Cari dan highlight posisi pengguna login;
+  
+  if (Pengguna ada di leaderboard?) then (Ya)
+    :Render leaderboard dengan highlight user;
+  else (Tidak)
+    :Render leaderboard;
+    :Tampil "Belum masuk peringkat";
+  endif
+  
+  |Users|
+  :Melihat peringkat diri dan lainnya;
+  
+  fork
+    :Switch tab (Total/Learner/Creator);
+    |Sistem|
+    :Tampilkan kategori yang dipilih;
+    |Users|
+  fork again
+    :Scroll untuk melihat lebih banyak;
+    :Klik "Lihat Lebih Banyak";
+    |Sistem|
+    :Load 100 entry berikutnya;
+    :Tampilkan data tambahan;
+    |Users|
+  fork again
+    :Pilih filter periode waktu;
+    |Sistem|
+    :Query ulang dengan filter tanggal;
+    :Tampilkan leaderboard periode terpilih;
+    |Users|
+  fork again
+    :Klik nama pengguna;
+    |Sistem|
+    :Tampilkan profil publik pengguna;
+    |Users|
+    note right: Extend ke "Melihat Profil"
+  fork again
+    :Selesai melihat;
+  end fork
+  
+  stop
+else (Tidak)
+  :Tampil "Belum ada data leaderboard";
+  |Users|
+  stop
+endif
+
+@enduml

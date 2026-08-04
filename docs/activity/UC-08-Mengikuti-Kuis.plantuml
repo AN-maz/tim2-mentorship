@@ -1,0 +1,93 @@
+@startuml UC-08-Mengikuti-Kuis
+|Users|
+start
+:Pilih kuis dari daftar;
+
+|Sistem|
+:Tampilkan info kuis (judul, waktu, poin);
+
+|Users|
+:Klik "Mulai Kuis";
+
+|Sistem|
+:Tampilkan soal pertama;
+:Mulai timer countdown;
+
+|Users|
+repeat
+  :Membaca soal;
+  
+  fork
+    :Memilih jawaban;
+  fork again
+    :Melewati soal (tidak jawab);
+  end fork
+  
+  :Klik "Soal Berikutnya";
+  |Sistem|
+  :Simpan jawaban pengguna;
+  
+  if (Masih ada soal berikutnya?) then (Ya)
+    :Tampilkan soal berikutnya;
+    |Users|
+  else (Tidak)
+    :Semua soal sudah ditampilkan;
+  endif
+repeat while (Ada soal lagi?) is (Ya)
+->Tidak;
+
+|Users|
+fork
+  :Klik "Review Jawaban";
+  |Sistem|
+  :Tampilkan ringkasan semua soal;
+  |Users|
+  :Klik nomor soal untuk edit;
+  :Ubah jawaban jika perlu;
+fork again
+  :Langsung lanjut;
+end fork
+
+:Klik "Kumpulkan Jawaban";
+
+|Sistem|
+:Menerima semua jawaban;
+:Cocokkan dengan kunci jawaban;
+
+if (Kunci jawaban ada?) then (Ya)
+  :Hitung jumlah jawaban benar;
+  :Kalkulasi skor (benar/total × 100);
+  :Kalkulasi XP Learner berdasarkan skor;
+  :INSERT ke RiwayatBelajar;
+  
+  if (Insert berhasil?) then (Ya)
+    :UPDATE xpLearner dan totalXP;
+    :Tampilkan halaman hasil (skor, XP);
+    |Users|
+    :Melihat hasil pengerjaan;
+    stop
+  else (Tidak)
+    :Log data untuk recovery;
+    :Tampil error "Gagal menyimpan hasil";
+    |Users|
+    note right: Admin dapat input XP manual
+    stop
+  endif
+else (Tidak)
+  :Tampil error "Kunci jawaban tidak ditemukan";
+  :Simpan jawaban untuk review manual;
+  |Users|
+  stop
+endif
+
+detach
+
+|Sistem|
+if (Timer mencapai 00:00?) then (Ya)
+  :Otomatis hentikan kuis;
+  :Kumpulkan jawaban yang sudah dijawab;
+  :Soal belum dijawab = salah;
+  note right: Lanjut kalkulasi skor
+endif
+
+@enduml
