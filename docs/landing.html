@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LMS Gamifikasi - Belajar tanpa kata terlambat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#0051D2',
+        navy: '#001A57'
+      },
+      fontFamily: {
+        sans: ['Inter','ui-sans-serif','system-ui','sans-serif']
+      }
+    }
+  }
+}
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #c3cbe0; border-radius: 8px; }
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  .glass { background: rgba(0,26,87,.55); backdrop-filter: blur(10px); }
+  .float-anim { animation: float 5s ease-in-out infinite; }
+  @keyframes float { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-12px); } }
+</style>
+</head>
+<body class="bg-white text-slate-800">
+
+<!-- ================= NAVBAR ================= -->
+<header class="fixed top-0 inset-x-0 z-50">
+  <nav class="max-w-6xl mx-auto px-6 mt-4">
+    <div class="glass rounded-2xl px-5 py-3 flex items-center justify-between text-white shadow-lg border border-white/10">
+      <a href="#beranda" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        </div>
+        <div>
+          <div class="font-extrabold leading-none">LMS Gamifikasi</div>
+          <div class="text-white/50 text-[10px] mt-0.5">Belajar tidak ada kata terlambat</div>
+        </div>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-white/80">
+        <a href="#beranda" class="hover:text-white transition">Beranda</a>
+        <a href="#kenapa" class="hover:text-white transition">Kenapa Kami</a>
+        <a href="#fitur" class="hover:text-white transition">Fitur</a>
+        <a href="#tim" class="hover:text-white transition">Team</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="#footer" class="hidden sm:inline text-white/80 hover:text-white text-sm font-medium transition">Kontak</a>
+        <a href="prototype.html" class="bg-primary hover:bg-blue-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition shadow-lg shadow-primary/30">Masuk</a>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- ================= HERO ================= -->
+<section id="beranda" class="relative overflow-hidden" style="background:linear-gradient(135deg,#001A57 0%,#0051D2 100%);">
+  <div class="max-w-6xl mx-auto px-6 pt-36 pb-20 grid lg:grid-cols-2 gap-12 items-center">
+    <div class="text-white">
+      <span class="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-xs font-semibold text-white/80">
+        <span class="w-2 h-2 rounded-full bg-green-400"></span> Musim (season) sedang aktif
+      </span>
+      <h1 class="mt-6 text-4xl md:text-5xl font-extrabold leading-tight">
+        Belajar, Berkarya,<br>dan <span class="text-amber-300">Naik Peringkat!</span>
+      </h1>
+      <p class="mt-5 text-white/70 text-lg leading-relaxed max-w-lg">
+        Kumpulkan <b class="text-white">XP Learner</b> saat belajar dan <b class="text-white">XP Creator</b> saat berbagi ilmu. Bersaing sehat di leaderboard tiap season — karena <em>tidak ada kata terlambat untuk belajar.</em>
+      </p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <a href="prototype.html" class="bg-primary hover:bg-blue-600 text-white text-center font-bold px-7 py-3.5 rounded-xl transition shadow-xl shadow-black/20">Mulai Belajar Sekarang</a>
+        <a href="#fitur" class="border-2 border-white/30 hover:bg-white/10 text-white text-center font-semibold px-7 py-3.5 rounded-xl transition">Jelajahi Fitur</a>
+      </div>
+      <div class="grid grid-cols-3 gap-4 mt-10 max-w-md text-center">
+        <div class="bg-white/10 rounded-xl p-3"><div class="text-2xl font-extrabold">+10 XP</div><div class="text-white/60 text-xs mt-0.5">Baca Materi</div></div>
+        <div class="bg-white/10 rounded-xl p-3"><div class="text-2xl font-extrabold">+20 XP</div><div class="text-white/60 text-xs mt-0.5">Upload Materi</div></div>
+        <div class="bg-white/10 rounded-xl p-3"><div class="text-2xl font-extrabold">+30 XP</div><div class="text-white/60 text-xs mt-0.5">Buat Kuis</div></div>
+      </div>
+    </div>
+    <div class="hidden lg:block">
+      <div class="bg-white rounded-3xl shadow-2xl p-6 float-anim">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold">AP</div>
+          <div class="flex-1">
+            <div class="font-extrabold text-navy">Andi Pratama</div>
+            <div class="text-xs text-slate-400">Gold • 220 total XP</div>
+          </div>
+          <span class="rank-chip">GOLD</span>
+        </div>
+        <div class="mt-5">
+          <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Progress peringkat</span><span>220/500 XP</span></div>
+          <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width:44%;background:linear-gradient(90deg,#0051D2,#00a3ff);"></div>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-2">280 XP menuju <b>Platinum</b></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-6 text-center">
+          <div class="bg-blue-50 rounded-xl p-3"><div class="text-xl font-extrabold text-primary">4</div><div class="text-[10px] text-slate-400">XP Kuis</div></div>
+          <div class="bg-amber-50 rounded-xl p-3"><div class="text-xl font-extrabold text-amber-500">3</div><div class="text-[10px] text-slate-400">XP Materi</div></div>
+          <div class="bg-primary rounded-xl p-3"><div class="text-xl font-extrabold text-white">#1</div><div class="text-[10px] text-white/70">Leaderboard</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= KENAPA ================= -->
+<section id="kenapa" class="bg-slate-50 py-24">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="max-w-2xl reveal">
+      <span class="text-xs font-bold text-primary uppercase tracking-widest">Kenapa Platform Ini</span>
+      <h2 class="mt-3 text-3xl md:text-4xl font-extrabold text-navy">Belajar jadi seru, bukan sekadar tugas</h2>
+      <p class="mt-4 text-slate-500 leading-relaxed">Kami membangun ruang belajar yang menyenangkan, terbuka untuk siapa saja dari berbagai latar belakang.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-11 h-11 rounded-xl bg-blue-50 text-primary flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </div>
+        <h3 class="mt-4 font-bold text-navy">Tanpa Batas Target</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Tidak hanya siswa. Siapa saja yang ingin belajar bisa ikut serta.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-10 12h7l-1 8 10-12h-7z"/></svg>
+        </div>
+        <h3 class="mt-4 font-bold text-navy">Gamifikasi Murni</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">XP &amp; rank membangun motivasi dan peringkat sehingga belajar tidak membosankan.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-11 h-11 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h3 class="mt-4 font-bold text-navy">Belajar &amp; Berbagi</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Sekaligus menjadi <b>Learner</b> saat belajar dan <b>Creator</b> saat berbagi ilmu.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 class="mt-4 font-bold text-navy">Aman &amp; Terjaga</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Konten dimoderasi admin untuk menjaga kualitas dan kenyamanan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FITUR ================= -->
+<section id="fitur" class="py-24" style="background:#f1f5f9;">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="max-w-2xl reveal">
+      <span class="text-xs font-bold text-primary tracking-widest uppercase">Fitur</span>
+      <h2 class="mt-3 text-3xl md:text-4xl font-extrabold text-navy">Semua yang kamu butuhkan untuk berkembang</h2>
+      <p class="mt-4 text-slate-500 leading-relaxed">Dari belajar mandiri hingga uji pemahaman, semuanya dalam satu platform.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-12">
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-primary flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <h3 class="mt-5 font-bold text-navy text-lg">Jelajah Materi</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Materi berformat Markdown yang rapi, mudah dibaca, dari kreator lain.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+        </div>
+        <h3 class="mt-5 font-bold text-navy text-lg">Kuis &amp; Skor</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Uji pemahamanmu lewat kuis dengan batas waktu dan XP maksimal.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+        </div>
+        <h3 class="mt-5 font-bold text-navy text-lg">Leaderboard &amp; Rank</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Bersaing tiap season menuju tier Bronze hingga Diamond.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><path d="M14 13H10a3 3 0 0 0-3 3v2"/><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <h3 class="mt-5 font-bold text-navy text-lg">Rating &amp; Komentar</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Beri bintang dan diskusi di kolom komentar setiap materi.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 class="mt-5 font-bold text-navy text-lg">Moderasi Konten</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Admin menjaga kualitas materi dan kuis dari konten yang tidak relevan.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/><path d="m9.5 9.5 1.5 1.5 3-3"/></svg>
+        </div>
+        <h3 class="mt-5 font-bold text-navy text-lg">Masuk Cepat</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Login dan daftar sekali klik lewat akun Google Anda.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TEAM ================= -->
+<section id="tim" class="py-24">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="max-w-2xl reveal">
+      <span class="text-xs font-bold text-primary tracking-widest uppercase">Team</span>
+      <h2 class="mt-3 text-3xl md:text-4xl font-extrabold text-navy">Dibalik LMS Gamifikasi</h2>
+      <p class="mt-4 text-slate-500 leading-relaxed">Tangan-tangan yang merancang dan membangun platform ini.</p>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+      <div class="bg-white rounded-2xl p-6 text-center border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-20 h-20 mx-auto rounded-full bg-primary text-white flex items-center justify-center text-2xl font-extrabold">P</div>
+        <h3 class="mt-4 font-bold text-navy text-lg">Purwa</h3>
+        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Frontend &amp; Desain</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 text-center border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-20 h-20 mx-auto rounded-full bg-navy text-white flex items-center justify-center text-2xl font-extrabold">E</div>
+        <h3 class="mt-4 font-bold text-navy text-lg">Erlangga</h3>
+        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Backend Developer</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 text-center border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-20 h-20 mx-auto rounded-full bg-amber-400 text-white flex items-center justify-center text-2xl font-extrabold">A</div>
+        <h3 class="mt-4 font-bold text-navy text-lg">A. (mas Aep)</h3>
+        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Data &amp; Analisis</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 text-center border border-slate-100 hover:shadow-lg transition reveal">
+        <div class="w-20 h-20 mx-auto rounded-full bg-emerald-400 text-white flex items-center justify-center text-2xl font-extrabold">Z</div>
+        <h3 class="mt-4 font-bold text-navy text-lg">Zaid</h3>
+        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">UI/UX &amp; Dokumentasi</div>
+      </div>
+    </div>
+    <p class="text-center text-xs text-slate-400 mt-8 reveal">* Nama &amp; peran di atas bersifat placeholder — sesuaikan dengan anggota tim yang sebenarnya.</p>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="py-20 px-6">
+  <div class="max-w-5xl mx-auto rounded-3xl text-center text-white p-10 md:p-16 reveal" style="background:linear-gradient(135deg,#001A57,#0051D2);">
+    <h2 class="text-3xl md:text-4xl font-extrabold">Siap naik peringkat?</h2>
+    <p class="mt-4 text-white/70 max-w-xl mx-auto">Mulai menabung XP hari ini. Siapa tahu di season berikutnya kamu di puncak leaderboard.</p>
+    <a href="prototype.html" class="mt-8 inline-block bg-white text-navy font-bold px-8 py-4 rounded-xl transition hover:bg-blue-50 shadow-xl">Masuk &amp; Mulai Belajar</a>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer id="footer" class="bg-navy text-white pt-16 pb-8">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="grid md:grid-cols-4 gap-10">
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          </div>
+          <div class="font-extrabold text-lg">LMS Gamifikasi</div>
+        </div>
+        <p class="mt-4 text-white/50 text-sm max-w-sm leading-relaxed">Berbagi dan mempelajari ilmu dengan semangat gamifikasi. Tidak ada kata terlambat untuk belajar.</p>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-white/60 uppercase tracking-wider">Navigasi</h4>
+        <ul class="mt-4 space-y-2 text-sm text-white/80">
+          <li><a class="hover:text-white transition">Beranda</a></li>
+          <li><a href="#kenapa" class="hover:text-white transition">Kenapa Kami</a></li>
+          <li><a href="#fitur" class="hover:text-white transition">Fitur</a></li>
+          <li><a href="#tim" class="hover:text-white transition">Team</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-white/60 uppercase tracking-wider">Mulai</h4>
+        <ul class="mt-4 space-y-2 text-sm text-white/80">
+          <li><a href="prototype.html" class="hover:text-white transition">Masuk ke Aplikasi</a></li>
+          <li><a href="prototype.html" class="hover:text-white transition">Daftar Akun Baru</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
+      <div>&copy; 2026 LMS Gamifikasi. Dibuat dengan semangat belajar.</div>
+      <div>Prototype simulasi • docs/landing.html</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
