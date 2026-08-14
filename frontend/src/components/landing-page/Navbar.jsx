@@ -1,4 +1,5 @@
 import React from 'react';
+import {Link} from 'react-router-dom'
 
 export default function Navbar() {
   return (
@@ -7,7 +8,7 @@ export default function Navbar() {
         <div className="glass rounded-2xl px-5 py-3 flex items-center justify-between text-white shadow-lg border border-white/10">
           
           {/* Logo & Branding */}
-          <a href="#beranda" className="flex items-center gap-3">
+          <Link to="/*" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <svg 
                 width="22" 
@@ -28,7 +29,7 @@ export default function Navbar() {
                 Belajar tidak ada kata terlambat
               </div>
             </div>
-          </a>
+          </Link>
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-white/80">
@@ -43,12 +44,12 @@ export default function Navbar() {
             <a href="#footer" className="hidden sm:inline text-white/80 hover:text-white text-sm font-medium transition">
               Kontak
             </a>
-            <a 
-              href="prototype.html" 
+            <Link
+              to="/auth"
               className="bg-primary hover:bg-blue-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition shadow-lg shadow-primary/30"
             >
               Masuk
-            </a>
+            </Link>
           </div>
 
         </div>
