@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #2563eb; 
+  --color-navy: #031b4e;
+}
+
+@utility glass {
+  background-color: rgba(30, 41, 59, 0.7); 
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
