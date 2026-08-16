@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
@@ -49,8 +50,8 @@ export default function Footer() {
               Mulai
             </h4>
             <ul className="mt-4 space-y-2 text-sm text-white/80">
-              <li><a href="prototype.html" className="hover:text-white transition">Masuk ke Aplikasi</a></li>
-              <li><a href="prototype.html" className="hover:text-white transition">Daftar Akun Baru</a></li>
+              <li><Link to="/auth" className="hover:text-white transition">Masuk ke Aplikasi</Link></li>
+              <li><Link to="/auth" className="hover:text-white transition">Daftar Akun Baru</Link></li>
             </ul>
           </div>
 
