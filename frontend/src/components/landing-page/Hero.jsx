@@ -80,7 +80,7 @@ export default function Hero() {
                 Mulai Belajar Sekarang
               </Link>
 
-              
+              <a
                 href="#fitur"
                 className="rounded-xl border-2 border-blue-300/50 bg-transparent px-8 py-4 text-base font-bold text-white transition duration-200 hover:-translate-y-1 hover:bg-white/10"
               >
