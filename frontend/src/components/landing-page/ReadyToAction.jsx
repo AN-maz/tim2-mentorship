@@ -15,7 +15,7 @@ export default function ReadyToAction() {
           puncak leaderboard.
         </p>
         <Link
-          to="/login"
+          to="/auth"
           className="mt-8 inline-block bg-white text-navy font-bold px-8 py-4 rounded-xl transition hover:bg-blue-50 shadow-xl"
         >
           Masuk & Mulai Belajar
