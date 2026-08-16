@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Hero() {
   return (
     <section
@@ -71,19 +73,19 @@ export default function Hero() {
 
             {/* Buttons */}
             <div className="mt-9 flex flex-wrap gap-4">
-              <button
-                type="button"
+              <Link
+                to="/auth"
                 className="rounded-xl bg-blue-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-blue-950/30 transition duration-200 hover:-translate-y-1 hover:bg-blue-500"
               >
                 Mulai Belajar Sekarang
-              </button>
+              </Link>
 
-              <button
-                type="button"
+              
+                href="#fitur"
                 className="rounded-xl border-2 border-blue-300/50 bg-transparent px-8 py-4 text-base font-bold text-white transition duration-200 hover:-translate-y-1 hover:bg-white/10"
               >
                 Jelajahi Fitur
-              </button>
+              </a>
             </div>
 
             {/* XP Information */}
