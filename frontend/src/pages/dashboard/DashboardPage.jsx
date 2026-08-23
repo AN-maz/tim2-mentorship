@@ -1,4 +1,5 @@
 import { useAuth } from '../../hooks/useAuth.js';
+import { useNavigate } from 'react-router-dom';
 
 function RankChip({ rank }) {
     const tiers = {
@@ -85,6 +86,7 @@ function ActivityFeed({ activities }) {
 
 export default function DashboardPage() {
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     if (!user) return null;
 
@@ -143,17 +145,17 @@ export default function DashboardPage() {
                     <div className="bg-navy rounded-2xl p-6 text-white">
                         <h3 className="font-extrabold mb-1">Mulai Belajar</h3>
                         <p className="text-white/60 text-sm mb-4">Temukan materi menarik dari kreator lain.</p>
-                        <button className="w-full bg-primary hover:bg-blue-600 py-2.5 rounded-xl text-sm font-bold transition">
+                        <button className="w-full bg-primary hover:bg-blue-600 py-2.5 rounded-xl text-sm font-bold transition" onClick={() => navigate('/materi')}>
                             Jelajah Materi
                         </button>
                     </div>
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                         <h3 className="font-extrabold text-navy mb-3">Menjadi Kreator</h3>
                         <p className="text-slate-500 text-sm mb-4">Bagikan ilmu dan kumpulkan XP Creator.</p>
-                        <button className="w-full border-2 border-primary text-primary hover:bg-blue-50 py-2.5 rounded-xl text-sm font-bold transition">
+                        <button className="w-full border-2 border-primary text-primary hover:bg-blue-50 py-2.5 rounded-xl text-sm font-bold transition" onClick={() => navigate('/kelola-materi')}>
                             + Upload Materi
                         </button>
-                        <button className="w-full mt-2 border-2 border-amber-500 text-amber-500 hover:bg-amber-50 py-2.5 rounded-xl text-sm font-bold transition">
+                        <button className="w-full mt-2 border-2 border-amber-500 text-amber-500 hover:bg-amber-50 py-2.5 rounded-xl text-sm font-bold transition" onClick={() => navigate('/kelola-kuiss')}>
                             + Buat Kuis
                         </button>
                     </div>

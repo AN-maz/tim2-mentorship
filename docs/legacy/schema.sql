@@ -495,3 +495,31 @@ VALUES
     ('Season 1 - August 2026', NOW(), 'active');
 
 COMMIT;
+
+
+-- =============================================================================
+-- USER 1: Learner (Budi Santoso) - Password: user123
+-- Hash Bcrypt: $2b$10$Ep99k.iM5nN66Qf0l2YtQODKzQkYx2Gz6m8o/yPekb2g2eK4GZp4C
+-- =============================================================================
+WITH new_akun AS (
+    INSERT INTO akun (email, password_hash, provider, is_admin, status)
+    VALUES ('budi@example.com', '$2b$10$Ep99k.iM5nN66Qf0l2YtQODKzQkYx2Gz6m8o/yPekb2g2eK4GZp4C', 'LOCAL', FALSE, 'ACTIVE')
+    RETURNING id_akun
+)
+INSERT INTO pengguna (id_akun, nama_lengkap, username, bio, total_xp, current_season_xp, rank_tier)
+SELECT id_akun, 'Budi Santoso', 'budi_learner', 'Semangat belajar hal baru setiap hari!', 150, 150, 'BRONZE'
+FROM new_akun;
+
+
+-- =============================================================================
+-- USER 2: Creator (Siti Aminah) - Password: user123
+-- Hash Bcrypt: $2b$10$Ep99k.iM5nN66Qf0l2YtQODKzQkYx2Gz6m8o/yPekb2g2eK4GZp4C
+-- =============================================================================
+WITH new_akun AS (
+    INSERT INTO akun (email, password_hash, provider, is_admin, status)
+    VALUES ('siti@example.com', '$2b$10$Ep99k.iM5nN66Qf0l2YtQODKzQkYx2Gz6m8o/yPekb2g2eK4GZp4C', 'LOCAL', FALSE, 'ACTIVE')
+    RETURNING id_akun
+)
+INSERT INTO pengguna (id_akun, nama_lengkap, username, bio, total_xp, current_season_xp, rank_tier)
+SELECT id_akun, 'Siti Aminah', 'siti_creator', 'Berbagi materi web dev dan teknologi.', 600, 600, 'SILVER'
+FROM new_akun;

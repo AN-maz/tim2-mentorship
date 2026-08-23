@@ -15,6 +15,7 @@ function loadUserFromStorage() {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(loadUserFromStorage);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }) => {
     }, [user]);
 
     const handleLogin = useCallback(async (email, password) => {
+        setLoading(true);
         const res = await authService.login(email, password);
         if (res.success && res.token) {
             const userData = { ...res.user, token: res.token };
@@ -50,7 +52,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, login: handleLogin, logout: handleLogout }}>
+        <AuthContext.Provider value={{ user, login: handleLogin, logout: handleLogout,isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );
