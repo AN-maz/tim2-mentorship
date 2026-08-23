@@ -1,58 +1,154 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AuthContext } from './AuthContext.jsx';
-import { authService } from '../api/authService';
-
-function loadUserFromStorage() {
-    try {
-        const saved = localStorage.getItem('user_data');
-        if (saved) return JSON.parse(saved);
-    } catch (e) {
-        console.error('Failed to parse user data:', e);
-        localStorage.removeItem('user_data');
-    }
-    return null;
-}
+import { supabase } from '../lib/supabase';
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(loadUserFromStorage);
-    const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
-            localStorage.setItem('user_data', JSON.stringify({
-                id: user.id,
-                namaLengkap: user.namaLengkap,
-                email: user.email,
-                role: user.role,
-                statusAktif: user.statusAktif,
-                xpLearner: user.xpLearner,
-                xpCreator: user.xpCreator,
-                rankPeringkat: user.rankPeringkat,
-            }));
-        }
-    }, [user]);
+        const getSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setLoading(false);
 
-    const handleLogin = useCallback(async (email, password) => {
-        setLoading(true);
-        const res = await authService.login(email, password);
-        if (res.success && res.token) {
-            const userData = { ...res.user, token: res.token };
-            localStorage.setItem('jwt_token', res.token);
-            localStorage.setItem('user_data', JSON.stringify(userData));
-            setUser(userData);
-            return res;
-        }
-        throw new Error(res.error || 'Login gagal');
+            if (session) {
+                const { data: userData, error } = await supabase
+                    .from('pengguna')
+                    .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+                    .eq('id_akun', session.user.id)
+                    .single();
+
+                const akun = {
+                    id: session.user.id,
+                    email: session.user.email,
+                    namaLengkap: session.user.user_metadata?.full_name || session.user.email,
+                    photoURL: session.user.user_metadata?.avatar_url,
+                };
+
+                if (!error && userData) {
+                    akun.xpLearner = userData.xpLearner;
+                    akun.xpCreator = userData.xpCreator;
+                    akun.totalXP = userData.totalXP;
+                    akun.rankPeringkat = userData.rankPeringkat;
+                }
+
+                setUser(akun);
+            }
+        };
+
+        getSession();
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (session) {
+                    const { data: userData, error } = await supabase
+                        .from('pengguna')
+                        .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+                        .eq('id_akun', session.user.id)
+                        .single();
+
+                    const akun = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        namaLengkap: session.user.user_metadata?.full_name || session.user.email,
+                        photoURL: session.user.user_metadata?.avatar_url,
+                    };
+
+                    if (!error && userData) {
+                        akun.xpLearner = userData.xpLearner;
+                        akun.xpCreator = userData.xpCreator;
+                        akun.totalXP = userData.totalXP;
+                        akun.rankPeringkat = userData.rankPeringkat;
+                    }
+
+                    setUser(akun);
+                } else {
+                    setUser(null);
+                }
+                setLoading(false);
+            }
+        );
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const handleLogout = useCallback(() => {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('user_data');
+    const handleLogin = useCallback(async (email, password) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw new Error(error.message);
+
+        const session = data.session;
+
+        const { data: userData } = await supabase
+            .from('pengguna')
+            .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+            .eq('id_akun', session.user.id)
+            .single();
+
+        const roleData = await supabase
+            .from('akun')
+            .select('role')
+            .eq('id_akun', session.user.id)
+            .single();
+
+        const userPayload = {
+            id: session.user.id,
+            email: session.user.email,
+            namaLengkap: session.user.user_metadata?.full_name || session.user.email,
+            role: roleData.data?.role || 'user',
+            xpLearner: userData?.xpLearner || 0,
+            xpCreator: userData?.xpCreator || 0,
+            totalXP: userData?.totalXP || 0,
+            rankPeringkat: userData?.rankPeringkat || 'Unranked',
+        };
+
+        setUser(userPayload);
+        return { success: true, user: userPayload };
+    }, []);
+
+    const handleRegister = useCallback(async (namaLengkap, email, password) => {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: namaLengkap,
+                },
+            },
+        });
+
+        if (error) throw new Error(error.message);
+        return { success: true, user: data.user };
+    }, []);
+
+    const handleGoogleLogin = useCallback(async () => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${import.meta.env.VITE_SITE_URL || window.location.origin}/auth`,
+            },
+        });
+        if (error) throw new Error(error.message);
+        return { success: true, url: data.url };
+    }, []);
+
+    const handleLogout = useCallback(async () => {
+        await supabase.auth.signOut();
         setUser(null);
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, login: handleLogin, logout: handleLogout,isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{
+            user,
+            login: handleLogin,
+            register: handleRegister,
+            googleLogin: handleGoogleLogin,
+            logout: handleLogout,
+            loading,
+            isAuthenticated: !!user,
+        }}>
             {children}
         </AuthContext.Provider>
     );
