@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
             if (session) {
                 const { data: userData, error } = await supabase
                     .from('pengguna')
-                    .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+                    .select('xp_learner, xp_creator, total_xp, rank_peringkat')
                     .eq('id_akun', session.user.id)
                     .single();
 
@@ -26,10 +26,10 @@ export const AuthProvider = ({ children }) => {
                 };
 
                 if (!error && userData) {
-                    akun.xpLearner = userData.xpLearner;
-                    akun.xpCreator = userData.xpCreator;
-                    akun.totalXP = userData.totalXP;
-                    akun.rankPeringkat = userData.rankPeringkat;
+                    akun.xpLearner = userData.xp_learner;
+                    akun.xpCreator = userData.xp_creator;
+                    akun.totalXP = userData.total_xp;
+                    akun.rankPeringkat = userData.rank_peringkat;
                 }
 
                 setUser(akun);
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
                 if (session) {
                     const { data: userData, error } = await supabase
                         .from('pengguna')
-                        .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+                        .select('xp_learner, xp_creator, total_xp, rank_peringkat')
                         .eq('id_akun', session.user.id)
                         .single();
 
@@ -54,10 +54,10 @@ export const AuthProvider = ({ children }) => {
                     };
 
                     if (!error && userData) {
-                        akun.xpLearner = userData.xpLearner;
-                        akun.xpCreator = userData.xpCreator;
-                        akun.totalXP = userData.totalXP;
-                        akun.rankPeringkat = userData.rankPeringkat;
+                        akun.xpLearner = userData.xp_learner;
+                        akun.xpCreator = userData.xp_creator;
+                        akun.totalXP = userData.total_xp;
+                        akun.rankPeringkat = userData.rank_peringkat;
                     }
 
                     setUser(akun);
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
         const { data: userData } = await supabase
             .from('pengguna')
-            .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+            .select('xp_learner, xp_creator, total_xp, rank_peringkat')
             .eq('id_akun', session.user.id)
             .single();
 
@@ -98,10 +98,10 @@ export const AuthProvider = ({ children }) => {
             email: session.user.email,
             namaLengkap: session.user.user_metadata?.full_name || session.user.email,
             role: roleData.data?.role || 'user',
-            xpLearner: userData?.xpLearner || 0,
-            xpCreator: userData?.xpCreator || 0,
-            totalXP: userData?.totalXP || 0,
-            rankPeringkat: userData?.rankPeringkat || 'Unranked',
+            xpLearner: userData?.xp_learner || 0,
+            xpCreator: userData?.xp_creator || 0,
+            totalXP: userData?.total_xp || 0,
+            rankPeringkat: userData?.rank_peringkat || 'Unranked',
         };
 
         setUser(userPayload);

@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
 
 export const authService = {
-  login: async (email, password) => {
+login: async (email, password) => {
+    console.log('authService.login called with:', { email, password: '***' });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { success: false, error: error.message };
 
@@ -13,9 +14,10 @@ export const authService = {
       .eq('id_akun', session.user.id)
       .single();
 
+    // Sesuaikan nama kolom dengan tabel database (snake_case)
     const { data: userData } = await supabase
       .from('pengguna')
-      .select('xpLearner, xpCreator, totalXP, rankPeringkat')
+      .select('xp_learner, xp_creator, total_xp, rank_peringkat')
       .eq('id_akun', session.user.id)
       .single();
 
@@ -27,15 +29,19 @@ export const authService = {
         email: session.user.email,
         namaLengkap: session.user.user_metadata?.full_name || session.user.email,
         role: roleData?.role || 'user',
-        xpLearner: userData?.xpLearner || 0,
-        xpCreator: userData?.xpCreator || 0,
-        totalXP: userData?.totalXP || 0,
-        rankPeringkat: userData?.rankPeringkat || 'Unranked',
+        xpLearner: userData?.xp_learner || 0,
+        xpCreator: userData?.xp_creator || 0,
+        totalXP: userData?.total_xp || 0,
+        rankPeringkat: userData?.rank_peringkat || 'Unranked',
       },
     };
   },
 
-  register: async (namaLengkap, email, password) => {
+  register: async (payload) => {
+    console.log('authService.register received payload:', payload);
+    const { namaLengkap, email, password } = payload;
+    console.log('destructured:', { namaLengkap, email, password });
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

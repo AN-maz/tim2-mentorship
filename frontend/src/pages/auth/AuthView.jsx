@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../../api/authService';
 import { useAuth } from '../../hooks/useAuth.js';
 
+
+
 export default function AuthView() {
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -16,6 +18,7 @@ export default function AuthView() {
         password: '',
     });
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
@@ -24,12 +27,15 @@ export default function AuthView() {
             [e.target.name]: e.target.value,
         }));
         setError('');
+        setSuccessMsg('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+
+        console.log('formData saat submit:', formData);
 
         try {
             if (authMode === 'login') {
@@ -40,15 +46,18 @@ export default function AuthView() {
                 }
                 setError(res.error || 'Login gagal');
             } else {
-                const res = await authService.register({
+                const payload = {
                     namaLengkap: formData.name,
                     email: formData.email,
                     password: formData.password,
-                });
+                };
+                console.log('payload register:', payload);
+                const res = await authService.register(payload);
                 if (res.success) {
                     setAuthMode('login');
                     setFormData({ ...formData, name: '', password: '' });
-                    setError('Registrasi berhasil! Silakan login.');
+                    setSuccessMsg('Registrasi berhasil! Silakan login.');
+                    
                 } else {
                     setError(res.error || 'Registrasi gagal');
                 }
@@ -232,6 +241,12 @@ export default function AuthView() {
                             {error && (
                                 <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg">
                                     {error}
+                                </div>
+                            )}
+
+                            {successMsg && (
+                                <div className="bg-green-50 border border-green-200 text-green-700 text-xs px-3 py-2 rounded-lg">
+                                    {successMsg}
                                 </div>
                             )}
 
